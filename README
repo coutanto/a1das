@@ -19,4 +19,4 @@
 #        et h5py construit avec cette version hdf5
 # 1.1.2: reduction2_mpi, reduction3_mpi, reduction4_mpi differents algos possibles
 # 1.1.3: suppression des version mpi, version avec filtrage openMP via le paquet sosfilter, lecture 1 bloc / 2
-#
+# 1.1.4: correct bug in reduction and __get_time_bounds__ about unfilled output time chunks

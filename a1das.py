@@ -19,6 +19,7 @@
 #        et h5py construit avec cette version hdf5
 # 1.1.2: reduction2_mpi, reduction3_mpi, reduction4_mpi differents algos possibles
 # 1.1.3: suppression des version mpi, version avec filtrage openMP via le paquet sosfilter, lecture 1 bloc / 2
+# 1.1.4: correct bug in reduction and __get_time_bounds__ about unfilled output time chunks
 #
 import numpy as np
 import h5py
@@ -26,7 +27,7 @@ import pickle
 import scipy.io
 import matplotlib.pyplot as plot
 
-__version__ = "a1das Version 1.1.3"
+__version__ = "a1das Version 1.1.4"
 
 
 class DasFileHeader:
@@ -634,7 +635,7 @@ def __get_time_bounds__(hd, from_time, to_time, tdecim, section_time, skip=False
         first_block = 0  # First block index for temporal acquisition
         last_block = nb_block  # last block index ....
         # Total_time_size = number of time samples in the time series
-        total_time_size = nb_block * bts2 # this value is correct regardless of the choice for skip
+        total_time_size = (nb_block+1) * bts2 # this value is correct regardless of the choice for skip modifOC 130121
         from_time = origin_time
 
     #
@@ -1034,13 +1035,17 @@ def reduction(filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpc
     #   --------------------------- write header dataset structure on output file
     #   Create one dataset per distance in order to write in a transposed way
     #
-    # Each block gives decimed_block_time_size time samples
-    # we will write decimed_block_time_size * tdecim * kchunk time sample per chunk
-    # A chunk is filled when cblocks are read
+    # Each block contains decim_block_time_size time samples
+    # we will write decim_block_time_size * tdecim * kchunk time sample per chunk
+    # A chunk is filled when ncblocks are read
     decim_blk_time_size = int(block_time_size/tdecim)
     chunk_size = decim_blk_time_size * tdecim * kchunk
+    print('Original block time size is ', block_time_size, ' bytes')
+    print('Decimed block time size is ', decim_blk_time_size, ' bytes')
     print('Chunck size is ',chunk_size,' bytes')
     ncblock = kchunk * tdecim
+    print('corresponding to ', ncblock, ' original time blocks')
+
 
     # create groupe '/Traces'
     grp = fout.create_group('Traces')
@@ -1079,11 +1084,14 @@ def reduction(filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpc
     # --------------------------- loop reading blocks ----------------------
     #
     buff_in  = np.empty((decim_blk_time_size, total_space_size), np.float32, 'C')
+    #buff_test = np.zeros((total_space_size,decim_blk_time_size),np.float32, 'C')
     buff_out = np.empty((total_space_size, chunk_size), np.float32, 'C')
     #block_list=list(range(first_block, last_block))
-    ooffset=0
+    time_offset=0
+    # for i,block in enumerate range(first_block, last_block, step_block):
     i = 0
     for block in range(first_block, last_block, step_block): #in range(0,len(block_list)):
+
 
         if verbose >= 1:
             print('    ' + str(block - first_block + 1) + '/' + str(last_block - first_block) + ' blocks', end='\r')
@@ -1111,18 +1119,21 @@ def reduction(filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpc
         jchunk = i % ncblock
         buff_out[:, jchunk * decim_blk_time_size:(jchunk+1)*decim_blk_time_size] = buffer_trans
         if jchunk == ncblock - 1:
-            # write the current time chunk in all spatial dataset
+            # output buffer is filled with ncblock time block
+            # write it in all spatial dataset
             for j in range(0,total_space_size):
                 dset = section_list[j]
-                dset[ooffset:ooffset + chunk_size] = buff_out[j,:]
-            ooffset += chunk_size
+                dset[time_offset:time_offset + chunk_size] = buff_out[j,:]
+            time_offset += chunk_size
         i += 1
 
     # end of file reached, write partially filled buffer
     if jchunk != ncblock - 1:
+        print('Last time chunk is not filled: ',jchunk,ncblock)
+        print('remain space for time',total_time_size-time_offset)
         for j in range(0,total_space_size):
             dset = section_list[j]
-            dset[ooffset:ooffset + (jchunk+1)*decim_blk_time_size] = buff_out[j, 0:(jchunk+1)*decim_blk_time_size]
+            dset[time_offset:time_offset + (jchunk+1)*decim_blk_time_size] = buff_out[j, 0:(jchunk+1)*decim_blk_time_size]
     f.close()
     fout.close()
 

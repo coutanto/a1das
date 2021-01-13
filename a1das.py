@@ -1129,8 +1129,6 @@ def reduction(filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpc
 
     # end of file reached, write partially filled buffer
     if jchunk != ncblock - 1:
-        print('Last time chunk is not filled: ',jchunk,ncblock)
-        print('remain space for time',total_time_size-time_offset)
         for j in range(0,total_space_size):
             dset = section_list[j]
             dset[time_offset:time_offset + (jchunk+1)*decim_blk_time_size] = buff_out[j, 0:(jchunk+1)*decim_blk_time_size]

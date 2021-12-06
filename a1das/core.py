@@ -506,6 +506,7 @@ class A1File:
         """
         #
         from numpy import arange, fix
+        from ._a1das_exception import WrongValueError
 
         nb_block_max = self.file_header.block_info['nb_block']  # total number of block in the file
         freq_res = self.file_header.freq_res  # frequency of block writing
@@ -576,10 +577,12 @@ class A1File:
             if not skip:
                 # check range that was given as argument
                 min_time = bts4 * dT
-                #min_time = 0.
+                max_time = ((nb_block_max * bts2 + bts4) * dT)
+                if from_time > max_time or to_time <min_time:
+                    raise WrongValueError('time range requested is beyond time bounds')
                 if from_time < min_time:
                     from_time = min_time
-                max_time = ((nb_block_max * bts2 + bts4) * dT)
+                    print('Warning: trange min is to small, set to:', str(from_time))
                 if to_time > max_time:
                     to_time = (nb_block_max * bts2 + bts4) * dT
                     print('Warning: trange max is to high, set to:', str(to_time))
@@ -617,12 +620,16 @@ class A1File:
 
 
             else:  # skip = True
-                if from_time < 0:
-                    from_time = 0
+                min_time = 0.
                 max_time = ((nb_block_max + 1) * bts2 * dT)
+                if from_time > max_time or to_time <min_time:
+                    raise WrongValueError('time range requested is beyond time bounds')
+                if from_time < min_time:
+                    from_time = 0
+                    print('Warning: trange min is to small, set to:', str(from_time))
                 if to_time > max_time:
                     to_time = max_time
-
+                    print('Warning: trange max is to high, set to:', str(to_time))
                 # first_block = int(np.fix(from_time * freq_res))  # index of block containing the start time
                 # last_block  = int(np.fix(to_time * freq_res)) + 1  # index of block containing the ending time
                 ##first_block = int(fix(from_time * freq_res)) - 1 # index of block containing the start time

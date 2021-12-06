@@ -1,0 +1,2429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>a1das.reduction API documentation</title>
+<meta name="description" content="Functions for converting from Febus format to hdf5 reducted file and perform raw-to-strain[rate] conversion" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>a1das.reduction</code></h1>
+</header>
+<section id="section-intro">
+<p>Functions for converting from Febus format to hdf5 reducted file and perform raw-to-strain[rate] conversion</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#
+# Module to perform the reduction of Febus A1 DAS files and the conversion
+# from raw to strain
+#
+# O. Coutant, ISTerre, UGA, 2020 from matlab &amp; python code by Febus
+#
+#
+# Content:
+#
+#   I) Reduction remove the redundancy of data, perform optional transposition,
+#   apply time and/or space decimation, with/without anti_aliasing,
+#   selection of time/space ranges.
+#   The data are then written to HDF5 files with simple structure
+#      redution_transpose()
+#      reduction_notranspose()
+#      rawreduction_notranspose()
+#      rraw2info()
+#
+#   II) Conversion from raw to strain is applied without transposition,
+#   with time and/or space decimation, WITHOUT anti_aliasing,
+#   selection of time/space ranges.
+#   Strain is written to HDF5 files with simple structure
+#     raw2strain()
+#     rraw2strain()
+#
+#     uses raw2strPy.???.so binary module
+
+
+import numpy as np
+
+__version_reducted_format__=&#39;1.0&#39;
+
+__doc__=&#34;Functions for converting from Febus format to hdf5 reducted file and perform raw-to-strain[rate] conversion&#34;
+#
+# ========================================= REDUCTION_TRANSPOSE()  ============================
+#
+def reduction_transpose(filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpcorner=None, kchunk=10, skip=True, verbose=0, filterOMP=True, no_aliasing=True, compression=True):
+    &#39;&#39;&#39;
+    ##Description
+    Read a DAS section from an hdf5 Febus-Optics format, extract the requested part or all of it,
+    perform a transposition of the section, an optional highpass filter in the space domain
+
+    !!! Time decimation is performed with lowpass filtering if requested !!!
+
+    After reduction, the individual trace can be accessed directly through direct hdf5 requests
+
+    ##Input
+        filein, fileout: hdf5 (.h5) file to read/write
+        trange:  (tuple, list) time range in sec (start,end), (default = None, everything is read)
+        drange:  (tuple, list) distance range in meter (not km) (start,end), (default = None, everything is read)
+        ddecim:  (int) distance decimation factor (default=1)
+        tdecim:  (int) time decimation factor (default=1)
+        hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)
+        kchunk:  (int) the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+        skip:    (bool) skip redundant block when reading data (default=true) !!!! READ Doc
+        verbose: (int) be verbose (default=0, minimum message level)
+        filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)
+        no_aliasing: (bool) if tdecim &gt;1, apply a Low pass filter at 0.9 F_nyquist (default True)
+        compression: (bool) compress data in H5 files
+
+
+    ##Reading transposed reducted output file
+    With python using A1File.read(filename,format=&#39;reducted&#39;)
+    or as following example:
+
+        &gt;&gt;&gt;import h5py
+        &gt;&gt;&gt;f=h5py.File(filename)
+        &gt;&gt;&gt;header=f[&#39;header&#39;].attrs   # header dictionnary
+        &gt;&gt;&gt;print(header.keys()   )    # list of metadata
+        &gt;&gt;&gt;dist=f[&#39;distance&#39;]         # distance vector
+        &gt;&gt;&gt;time=f[&#39;time&#39;]             # time vector
+        &gt;&gt;&gt;# Two ways to read all or individual traces
+        &gt;&gt;&gt;# read trace number 9
+        &gt;&gt;&gt;trace9 = f[&#39;/Traces/9&#39;][:]
+        &gt;&gt;&gt;# read the full section
+        &gt;&gt;&gt;# vsection is a virtual HDF5 2D array
+        &gt;&gt;&gt;section=f[&#39;/vsection&#39;][:,:]  #2D ndarray [nspace x ntime] (float64)
+        &gt;&gt;&gt;# read only the first 10 traces
+        &gt;&gt;&gt;section=f[&#39;/vsection&#39;][0:10,:]
+
+    &#39;&#39;&#39;
+    import h5py
+
+    from scipy import signal
+    if filterOMP:
+        try:
+            from a1das import _sosfilterPy
+        except:
+            print(&#39;could not import sosfilter binary module, switching to scipy&#39;)
+            filterOMP=False
+    from .core import open
+
+    #
+    #  --------------------------- open file for reading
+    #
+    a1 = open(filein, format=&#39;febus&#39;)
+    #
+    #  --------------------------- open file for writing
+    #
+    fout = h5py.File(fileout,&#39;w&#39;)
+
+
+    #
+    #  --------------------------- read header ----------------------
+    #
+    hd = a1.file_header
+    dhd = a1.data_header
+    if hd.srate_node == None:
+        print(&#39;Cannot reduce raw data, only strain(rate)&#39;)
+        exit(-1)
+    #
+    #  --------------------------- block time size
+    #  we read the full block and skip redundant blocks
+    #  or read half of it and read all blocks
+    if skip:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;])
+    else:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;] / 2)
+    #
+    # check whether time decimation factor is ok or not, it must divide
+    # the chunk size
+    #
+    if (block_time_size) % tdecim != 0:
+        print(&#39;Error: time decimation factor must be a divider of the chunk size =&#39;,block_time_size)
+        print(&#39;try :&#39;)
+        for i in range(2,100):
+            if (block_time_size) % i == 0:
+                print(&#39;  tdecim=&#39;,i)
+        exit(0)
+
+    #
+    #   --------------------------- compute time bounds and time vector -----------------
+    #
+
+    # indices for chunk (block) of data
+    # indices for first and last time record in the first and last block
+    # Vector of times in range[from_time, to_time] with tdecim
+    first_block, last_block, step_block, \
+    time_out, block_indices = a1._get_time_bounds(trange=trange, skip=skip, tdecim=tdecim, align_on_block=True)
+
+    #
+    #     ---------------------------  compute distance bounds and indices ----------------
+    #
+    dist_out, dist_ix, dist_in = a1._get_space_bounds(drange, ddecim)
+
+    #
+    # ---------------------------   print summary  -------------------
+    #
+    print(&#39; &#39;)
+    print(&#39;&gt; Data extraction from [&#39;, time_out[0], &#39; - &#39;, time_out[-1], &#39;] sec and from [&#39;, dist_out[0], &#39; - &#39;,
+          dist_out[-1], &#39;] m&#39;)
+    print(&#39;&gt; sampling rate are :&#39;,dhd[&#39;dt&#39;],&#39; sec and &#39;,dhd[&#39;dx&#39;],&#39; m&#39;)
+
+    #
+    # --------------------------- size of data to be written ---------------------------
+    #
+    output_time_size = len(time_out)
+    output_space_size = len(dist_out)
+    input_space_size = len(dist_in)
+
+    #
+    # ---------------------------- compute optional filter coefficients
+    #
+    # In space
+    if hpcorner:
+        k_nyquist = np.pi/dhd[&#39;dx&#39;]
+        k_corner = 2*np.pi/hpcorner
+        sos = signal.butter(3, k_corner / k_nyquist, &#39;highpass&#39;, output=&#39;sos&#39;)
+        #scipy.io.savemat(&#39;sos.mat&#39;, mdict={&#39;sos&#39;: sos})
+    # In time
+    if tdecim &gt;1:
+        f_nyquist  = 1./dhd[&#39;dt&#39;] / 2.
+        f_corner  = 0.7 * f_nyquist / tdecim
+        sos_time = signal.butter(6, f_corner / f_nyquist, &#39;lowpass&#39;, output=&#39;sos&#39;)
+
+    #
+    #   --------------------------- write header dataset structure on output file
+    #   Create one dataset per distance
+    #
+    # Each output block contains decim_blk_time_size time samples
+    # we will write decim_blk_time_size * tdecim * kchunk time sample per output chunk
+    # A chunk is filled when ncblock are read
+    decim_blk_time_size = int(block_time_size/tdecim)
+
+    out_chunk_time_size = block_time_size * kchunk
+    if out_chunk_time_size &gt; output_time_size:
+        out_chunk_time_size = output_time_size
+        kchunk = int(out_chunk_time_size / block_time_size)+1
+    ncblock = kchunk * tdecim
+    tmp_buff_time_size = block_time_size * ncblock
+
+    print(&#39;A block is a HDF5 chunk of data&#39;)
+    print(&#39;Original block has &#39;, block_time_size * input_space_size, &#39; (time x space) values&#39;)
+    print(&#39;Original block time size is &#39;, block_time_size, &#39; values&#39;)
+    print(&#39;Decimed block time size is &#39;, decim_blk_time_size, &#39; values&#39;)
+    print(&#39;total time size is &#39;,output_time_size, &#39; values&#39;)
+    print(&#39;Output block time-size is &#39;,out_chunk_time_size,&#39; values&#39;)
+    print(&#39;       corresponding to &#39;, ncblock, &#39; original time blocks&#39;)
+
+    #
+    # create groupe &#39;/header&#39; and fill it
+    #
+    header_grp = fout.create_group(&#39;header&#39;)
+    header_grp.attrs[&#39;file_type&#39;]=&#39;reducted_format&#39;
+    header_grp.attrs[&#39;version&#39;]=__version_reducted_format__
+    header_grp.attrs[&#39;transposition&#39;]= 1
+    header_grp.attrs[&#39;data_type&#39;]=&#39;strainrate&#39;
+    header_grp.attrs[&#39;gauge_length&#39;]=dhd[&#39;gauge_length&#39;]
+    header_grp.attrs[&#39;prf&#39;]=dhd[&#39;prf&#39;]
+    header_grp.attrs[&#39;sampling_res&#39;]=dhd[&#39;sampling_res&#39;]
+    header_grp.attrs[&#39;derivation_time&#39;]=dhd[&#39;derivation_time&#39;]
+    header_grp.attrs[&#39;dx&#39;]=dhd[&#39;dx&#39;]*ddecim
+    header_grp.attrs[&#39;nspace&#39;]=output_space_size
+    header_grp.attrs[&#39;ospace&#39;]=dhd[&#39;ospace&#39;]
+    header_grp.attrs[&#39;dt&#39;]=dhd[&#39;dt&#39;]*tdecim
+    header_grp.attrs[&#39;ntime&#39;]=output_time_size
+    header_grp.attrs[&#39;otime&#39;]=dhd[&#39;otime&#39;]
+
+    #
+    # create dataset that contains time vector
+    #
+    fout.create_dataset(&#39;time&#39;,data=time_out,dtype=&#39;f8&#39;)
+
+    #
+    # create dataset that contains distance vector
+    #
+    fout.create_dataset(&#39;distance&#39;,data=dist_out,dtype=&#39;f8&#39;)
+
+    #
+    # create group &#39;/Traces&#39;
+    #
+    section_list = _create_h5_group_transposed(fout, fileout, output_space_size, output_time_size, out_chunk_time_size,
+                                               compression=compression)
+
+    #
+    # --------------------------- loop reading blocks ----------------------
+    #
+    # buff_in  = np.empty((block_time_size, input_space_size), np.float32, &#39;C&#39;)
+    buff_out = np.empty((input_space_size, out_chunk_time_size), np.float32, &#39;C&#39;)
+    time_offset = 0
+    last_block_read = list(range(first_block, last_block, step_block))[-1]
+    for i, block in enumerate(range(first_block, last_block, step_block)):
+        if verbose &gt;= 1:
+            print(&#39;    &#39; + str(block - first_block + 1) + &#39;/&#39; + str(last_block - first_block) + &#39; blocks&#39;, end =&#39;\r&#39;)
+
+        # set block indices to read
+        if block == first_block:
+            block_start = block_indices[0][0]
+            block_end = block_indices[0][1]
+        elif block == last_block_read:
+            block_start = block_indices[2][0]
+            block_end = block_indices[2][1]
+        else:
+            block_start = block_indices[1][0]
+            block_end = block_indices[1][1]
+
+        # copy current block data into buffer
+        #buff_in[:, :] = hd.srate_node[block, block_start:block_end, :]
+        buff_in = hd.srate_node[block, : , :]
+
+        # highpass space filter if requested
+        if hpcorner:
+            # replace NaN by 0
+            #buff_in[np.where(np.isnan(buff_in))] = 0.
+            buff_in[np.where(np.isnan(buff_tmp))] = 0.
+            #buff_in = np.nan_to_num(buff_in)
+            if filterOMP:
+                # openMP sosfilter version
+                #buff_in[:, :] = _sosfilterPy.sosfiltfilt(sos, buff_in[:, :])
+                buff_in = _sosfilterPy.sosfiltfilt_s(sos, buff_in, block_start, block_end, 1)
+            else:
+                # scipy sequential filter
+                #buff_in[:, :] = signal.sosfiltfilt(sos, buff_in[:, :], axis=1)
+                buff_in[block_start:block_end, :] = signal.sosfiltfilt(sos, buff_in[block_start:block_end, :], axis=1)
+
+
+        # transpose data, copy is necessayr to make sure
+        # that the array is transposed in memeory
+        #buff_trans = np.transpose(buff_in)
+        buff_trans = np.transpose(buff_in).copy()
+
+        # increment output buffer block counter
+        jchunk = i % ncblock
+
+        if (tdecim&gt;1 and no_aliasing):
+            if filterOMP:
+                #print(sos_time.shape,buff_trans.shape,sos_time.dtype,buff_trans.dtype)
+                buff_trans = _sosfilterPy.sosfiltfilt_s(sos_time, buff_trans, 0, output_space_size, ddecim)
+            else:
+                buff_trans[0:output_space_size:ddecim, :] = \
+                    signal.sosfiltfilt(sos_time, buff_trans[0:output_space_size:ddecim, :], axis=1)
+            #alternative
+            #buff_trans[0:output_space_size:ddecim, :] = cusignal.filtering.resample.decimate(buff_trans[0:output_space_size:ddecim, :],tdecim,axis=1)
+        # Fill output buffer and perform time decimation
+        #buff_out[:, jchunk * decim_blk_time_size:(jchunk+1)*decim_blk_time_size] = buff_trans[:, 0:block_time_size:tdecim]
+        buff_out[:, jchunk * decim_blk_time_size:(jchunk + 1) * decim_blk_time_size] = \
+                 buff_trans[:,0:block_time_size:tdecim]
+
+        # when buffer is full , write datasets
+        if jchunk == ncblock - 1:
+            # output buffer is filled with ncblock time block
+            # write it in all spatial dataset
+            for j, jj in enumerate(range(0,output_space_size,ddecim)):
+                dset = section_list[j]
+                dset[time_offset:time_offset + out_chunk_time_size] = buff_out[jj, :]
+            time_offset += out_chunk_time_size
+
+    # end of file reached, write partially filled buffer
+    if jchunk != ncblock - 1:
+        for j,jj in enumerate(range(0,output_space_size,ddecim)):
+            dset = section_list[j]
+            dset[time_offset:time_offset + (jchunk+1)*decim_blk_time_size] = buff_out[jj, 0:(jchunk+1)*decim_blk_time_size]
+
+    a1.close()
+    fout.close()
+
+#
+# ========================================= REDUCTION_NOTRANSPOSE()  ============================
+#
+def reduction_notranspose(filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpcorner=None, kchunk=10,
+                          skip=True, verbose=0, filterOMP=True, compression=True):
+    &#34;&#34;&#34;
+    ##Description
+    Read a DAS section from an hdf5 Febus-Optics format, extract the requested part or all of it,
+    perform an optional highpass filter in the space domain and remove data redundancy
+
+    !!! Time decimation is performed without any lowpass filtering !!!
+
+    After reduction, the records are stored in a single 2D array (time x space) where space = fast axis
+
+    ##Input
+        filein, fileout: hdf5 (.h5) file to read/write
+        trange:  (tuple, list) time range in sec (start,end), (default = None, everything is read)
+        drange:  (tuple, list) distance range in meter (not km) (start,end), (default = None, everything is read)
+        ddecim:  (int) distance decimation factor (default=1)
+        tdecim:  (int) time decimation factor (default=1)
+        hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)
+        kchunk:  (int) the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+        skip:    (bool) skip redundant block when reading data (default=true)
+        verbose: (int) be verbose (default=0, minimum message level)
+        filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)
+        compression: (bool) use compression in H5 files (default True)
+
+    ##Reading non transposed reducted output file
+    With python using A1File.read(filename,format=&#39;reducted&#39;)
+    or as following example:
+
+        &gt;&gt;&gt;import h5py
+        &gt;&gt;&gt;f=h5py.File(filename)
+        &gt;&gt;&gt;header=f[&#39;header&#39;].attrs   # header dictionnary
+        &gt;&gt;&gt;print(header.keys()   )    # list of metadata
+        &gt;&gt;&gt;dist=f[&#39;distance&#39;]         # distance vector
+        &gt;&gt;&gt;time=f[&#39;time&#39;]             # time vector
+        &gt;&gt;&gt;data=f[&#39;strain&#39;]           # 2D strain[-rate] ndarray [ntime x nspace](float64)
+
+    &#34;&#34;&#34;
+
+    import h5py
+    from .core import open
+    from scipy import signal
+    if filterOMP:
+        try:
+            from a1das import _sosfilterPy
+        except:
+            print(&#39;could not import sosfilter binary module, switching to scipy&#39;)
+            filterOMP=False
+
+    #
+    #  --------------------------- open file for reading
+    #
+    a1 = open(filein, format=&#39;febus&#39;)
+    #
+    #  --------------------------- open file for writing
+    #
+    fout = h5py.File(fileout,&#39;w&#39;)
+
+
+    #
+    #  --------------------------- read header ----------------------
+    #
+    hd = a1.file_header
+    dhd = a1.data_header
+    if hd.srate_node == None:
+        print(&#39;Cannot reduce raw data, only strain(rate)&#39;)
+        exit(-1)
+
+    #
+    #  --------------------------- block time size
+    #  we read the full block and skip redundant blocks
+    #  or read half of it and read all blocks
+    if skip:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;])
+    else:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;] / 2)
+
+    #
+    # check whether time decimation factor is ok or not, it must divide
+    # the chunk size
+    #
+    if (block_time_size) % tdecim != 0:
+        print(&#39;Error: time decimation factor must be a divider of the chunk size =&#39;,block_time_size)
+        print(&#39;try :&#39;)
+        for i in range(2,100):
+            if (block_time_size) % i == 0:
+                print(&#39;  tdecim=&#39;,i)
+        exit(0)
+
+    #
+    #   --------------------------- compute time bounds and time vector -----------------
+    #
+
+    # indices for chunk (block) of data
+    # indices for first and last time record in the first and last block
+    # Vector of times in range[from_time, to_time] with tdecim
+    first_block, last_block, step_block, \
+    time_out, block_indices = a1._get_time_bounds(trange=trange, skip=skip, tdecim=tdecim, align_on_block=True)
+
+    #
+    #     ---------------------------  compute distance bounds and indices ----------------
+    #
+    dist_out, dist_ix, dist_in = a1._get_space_bounds(drange, ddecim)
+
+    #
+    # ---------------------------   print summary  -------------------
+    #
+    print(&#39; &#39;)
+    print(&#39;&gt; Data extraction from [&#39;, time_out[0], &#39; - &#39;, time_out[-1], &#39;] sec and from [&#39;, dist_out[0], &#39; - &#39;,
+          dist_out[-1], &#39;] m&#39;)
+    print(&#39;&gt; sampling rate are :&#39;,dhd[&#39;dt&#39;],&#39; sec and &#39;,dhd[&#39;dx&#39;],&#39; m&#39;)
+
+    #
+    # --------------------------- size of data to be written ---------------------------
+    #
+    output_time_size = len(time_out)  # number of time samples with decimation tdecim
+    output_space_size = len(dist_out) # number of space samples with decimation ddecim
+    input_space_size = len(dist_in)  # number of space samples without decimation
+    #input_time_size = block_time_size
+    #
+    # ---------------------------- compute optional filter coeffcient
+    #
+    if hpcorner:
+        k_nyquist = np.pi/dhd[&#39;dx&#39;]
+        k_corner = 2*np.pi/hpcorner
+        sos = signal.butter(3, k_corner / k_nyquist, &#39;highpass&#39;, output=&#39;sos&#39;)
+
+    #
+    #   --------------------------- write header dataset structure on output file
+    #   Create a single dataset for all records, stored with a chunk size
+    #   approximately equal to : kchunk * original_chunk_size
+    #
+    # Each block contains decim_block_time_size time samples
+    # we will write decim_block_time_size * tdecim * kchunk time sample per chunk
+    # A chunk is filled when ncblocks are read
+    decim_blk_time_size = int(block_time_size/tdecim)
+    decim_blk_space_size = output_space_size
+
+    out_chunk_space_size = decim_blk_space_size
+    out_chunk_time_size = int(block_time_size * kchunk)
+    if out_chunk_time_size &gt; output_time_size:
+        out_chunk_time_size = output_time_size
+        kchunk = int(out_chunk_time_size / block_time_size) + 1
+    ncblock = kchunk * tdecim
+    tmp_buff_time_size = block_time_size * ncblock
+
+    print(&#39;A block is a HDF5 chunk of data&#39;)
+    print(&#39;Original block has &#39;, block_time_size * input_space_size, &#39; (time x space) values&#39;)
+    print(&#39;Decimed block has &#39;, decim_blk_time_size * output_space_size, &#39; (time x space) values&#39;)
+    print(&#39;Original time block size is &#39;, block_time_size, &#39; values&#39;)
+    print(&#39;Decimed time block size is &#39;, decim_blk_time_size, &#39; values&#39;)
+    print(&#39;total time size is &#39;,output_time_size, &#39; values&#39;)
+    print(&#39;Output block time size is &#39;, out_chunk_time_size, &#39; values&#39;)
+    print(&#39;       corresponding to &#39;, ncblock, &#39; original blocks&#39;)
+    print(&#39;Output block has &#39;,out_chunk_time_size * output_space_size, &#39; (time x space) values&#39;)
+
+    #
+    # create groupe &#39;/header&#39; and fill it
+    #
+    header_grp = fout.create_group(&#39;header&#39;)
+    header_grp.attrs[&#39;file_type&#39;]=&#39;reducted_format&#39;
+    header_grp.attrs[&#39;version&#39;]=__version_reducted_format__
+    header_grp.attrs[&#39;transposition&#39;]= 0
+    header_grp.attrs[&#39;data_type&#39;]=&#39;strainrate&#39;
+    header_grp.attrs[&#39;gauge_length&#39;]=dhd[&#39;gauge_length&#39;]
+    header_grp.attrs[&#39;prf&#39;]=dhd[&#39;prf&#39;]
+    header_grp.attrs[&#39;sampling_res&#39;]=dhd[&#39;sampling_res&#39;]
+    header_grp.attrs[&#39;derivation_time&#39;]=dhd[&#39;derivation_time&#39;]
+    header_grp.attrs[&#39;dx&#39;]=dhd[&#39;dx&#39;]*ddecim
+    header_grp.attrs[&#39;nspace&#39;]=output_space_size
+    header_grp.attrs[&#39;ospace&#39;]=dhd[&#39;ospace&#39;]
+    header_grp.attrs[&#39;dt&#39;]=dhd[&#39;dt&#39;]*tdecim
+    header_grp.attrs[&#39;ntime&#39;]=output_time_size
+    header_grp.attrs[&#39;otime&#39;]=dhd[&#39;otime&#39;]
+
+    # create dataset that contains time vector
+    fout.create_dataset(&#39;time&#39;,data=time_out,dtype=&#39;f8&#39;)
+
+
+    # create dataset that contains distance vector
+    fout.create_dataset(&#39;distance&#39;,data=dist_out,dtype=&#39;f8&#39;)
+
+
+    # create dataset that contains decimated traces
+    records = _create_h5_group_not_transposed(fout, output_space_size, output_time_size,
+                                             out_chunk_time_size, out_chunk_space_size, compression)
+
+
+    #
+    # --------------------------- loop reading blocks ----------------------
+    #
+    # buff_in contain a full chunk of input data (no decimation)
+    chunk_in  = np.empty((block_time_size, input_space_size), np.float32, &#39;C&#39;)
+    buff_1    = np.empty((tmp_buff_time_size, output_space_size), np.float32, &#39;C&#39;)
+    time_offset=0
+    last_block_read = list(range(first_block, last_block, step_block))[-1]
+    for i, block in enumerate(range(first_block, last_block, step_block)):
+        if verbose &gt;= 1:
+            print(&#39;    &#39; + str(block - first_block + 1) + &#39;/&#39; + str(last_block - first_block) + &#39; blocks&#39;, end=&#39;\r&#39;)
+
+        # set block indices to read
+        if block == first_block:
+            block_start = block_indices[0][0]
+            block_end = block_indices[0][1]
+        elif block == last_block_read:
+            block_start = block_indices[2][0]
+            block_end = block_indices[2][1]
+        else:
+            block_start = block_indices[1][0]
+            block_end = block_indices[1][1]
+
+        # copy current block data into buffer
+        chunk_in[:,:] = hd.srate_node[block, block_start:block_end, :]
+
+        # highpass space filter if requested
+        if hpcorner:
+            # replace NaN by 0
+            chunk_in[np.where(np.isnan(chunk_in))] = 0.
+            if filterOMP:
+                # openMP sosfilter version
+                chunk_in[:, :] = _sosfilterPy.sosfiltfilt_s(sos, chunk_in[:, :])
+            else:
+                # scipy sequential filter
+                chunk_in[:, :] = signal.sosfiltfilt(sos, chunk_in[:, :], axis=1)
+
+
+        # Fill output buffer; when it&#39;s full, write datasets
+        jchunk = i % ncblock
+        # copy in buff_1 decimated space samples and all time samples
+        buff_1[jchunk * block_time_size:(jchunk + 1) * block_time_size, :] = chunk_in[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        if jchunk == ncblock - 1:
+            # write it in all spatial dataset and decimate here for time decimation
+            buff_2 = np.squeeze(buff_1[0:tmp_buff_time_size:tdecim, :])
+            records[time_offset:time_offset + out_chunk_time_size, :] = buff_2
+            time_offset += out_chunk_time_size
+
+    # end of file reached, write partially filled buffer
+    if jchunk != ncblock - 1:
+        buff_2 = np.squeeze(buff_1[0:(jchunk + 1) * block_time_size:tdecim, :])
+        records[time_offset:time_offset + (jchunk+1)*decim_blk_time_size, :] = buff_2
+
+    a1.close()
+    fout.close()
+
+#
+# ========================================= RAWREDUCTION_NOTRANSPOSE()  ============================
+#
+def _rawreduction_notranspose(filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, kchunk=10,
+                          skip=True, verbose=0, use_compression=True):
+    &#34;&#34;&#34;
+    filein, fileout: hdf5 (.h5) file to read/write
+    trange:  time range in sec (start,end), (default = None, everything is read)
+    drange:  distance range in meter (not km) (start,end), (default = None, everything is read)
+    ddecim:  distance decimation factor (default=1)
+    tdecim:  time decimation factor (default=1)
+    kchunk:  the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+    skip:    skip redundant block when reading data (default=true)
+    verbose: be verbose (default=0, minimum message level)
+
+    =======================================================
+
+    Read a DAS raw file from an hdf5 Febus-Optics format, extract the requested part or all of it,
+    After reduction, the phasis are stored in 4 single 2D array (time x space) where space = fast axis
+    using a one byte binary storage per value
+
+    The reducted file is organized as follow
+    /
+     group   header
+     dataset distance = distance vector
+     dataset time =     time vector
+     dataset phase0, phase1, phase2, phase3 = real,imag part for 1st and second phase
+
+
+    =======================================================
+
+
+
+    &#34;&#34;&#34;
+
+    import h5py
+    from .core import open
+    #
+    #  --------------------------- open file for reading
+    #
+    a1 = open(filein,format=&#39;febus&#39;)
+    #
+    #  --------------------------- open file for writing
+    #
+    fout = h5py.File(fileout, &#39;w&#39;)
+
+    #
+    #  --------------------------- read header ----------------------
+    #
+    hd = a1.file_header
+    dhd = a1.data_header
+    if hd.chan_node == None:
+        print(&#39;Cannot read strain(rate)&#39;)
+        exit(-1)
+    #
+    #  --------------------------- block time size
+    #  we read the full block and skip redundant blocks
+    #  or read half of it and read all blocks
+    if skip:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;])
+    else:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;] / 2)
+
+
+    #
+    # check whether time decimation factor is ok or not, it must divide
+    # the chunk size
+    #
+    if (block_time_size) % tdecim != 0:
+        print(&#39;Error: time decimation factor must be a divider of the chunk size =&#39;, block_time_size)
+        print(&#39;try :&#39;)
+        for i in range(2, 100):
+            if (block_time_size) % i == 0:
+                print(&#39;  tdecim=&#39;, i)
+        exit(0)
+
+    #
+    #   --------------------------- compute time bounds and time vector -----------------
+    #
+
+    # indices for chunk (block) of data
+    # indices for first and last time record in the first and last block
+    # Vector of times in range[from_time, to_time] with tdecim
+    first_block, last_block, step_block, \
+    time_out, block_indices = a1._get_time_bounds(trange=trange, skip=skip, tdecim=tdecim)
+
+    #
+    #     ---------------------------  compute distance bounds and indices ----------------
+    #
+    dist_out, dist_ix, dist_in = a1._get_space_bounds__(drange, ddecim)
+
+    #
+    # ---------------------------   print summary  -------------------
+    #
+    print(&#39; &#39;)
+    print(&#39;&gt; Data extraction from [&#39;, time_out[0], &#39; - &#39;, time_out[-1], &#39;] sec and from [&#39;, dist_out[0], &#39; - &#39;,
+          dist_out[-1], &#39;] m&#39;)
+    print(&#39;&gt; sampling rate are :&#39;,dhd[&#39;dt&#39;],&#39; sec and &#39;,dhd[&#39;dx&#39;],&#39; m&#39;)
+
+    #
+    # --------------------------- size of data to be written ---------------------------
+    #
+    output_time_size = len(time_out)  # number of time samples with decimation tdecim
+    output_space_size = len(dist_out)  # number of space samples with decimation ddecim
+    input_space_size = len(dist_in)  # number of space samples without decimation
+    # input_time_size = block_time_size
+
+
+    #
+    #   --------------------------- write header dataset structure on output file
+    #   Create a single dataset for all records, stored with a chunk size
+    #   approximately equal to : kchunk * original_chunk_size
+    #
+    # Each block contains decim_block_time_size time samples
+    # we will write decim_block_time_size * tdecim * kchunk time sample per chunk
+    # A chunk is filled when ncblocks are read
+    decim_blk_time_size = int(block_time_size / tdecim)
+    decim_blk_space_size = output_space_size
+    chunk_size0 = (decim_blk_time_size * tdecim * kchunk)
+    if chunk_size0 &gt; output_time_size:
+        chunk_size0 = output_time_size
+        kchunk = int(chunk_size0 / block_time_size) + 1
+    chunk_size1 = decim_blk_space_size
+    chunk_size = chunk_size0 * chunk_size1
+    print(&#39;Original block size is &#39;, block_time_size * input_space_size, &#39; values&#39;)
+    print(&#39;Decimed block size is &#39;, decim_blk_time_size * output_space_size, &#39; values&#39;)
+    print(&#39;Original time block size is &#39;, block_time_size, &#39; values&#39;)
+    print(&#39;Decimed time block size is &#39;, decim_blk_time_size, &#39; values&#39;)
+    print(&#39;total time size is &#39;,output_time_size, &#39; values&#39;)
+    print(&#39;Chunck size is &#39;, chunk_size, &#39; values&#39;)
+    ncblock = kchunk * tdecim
+    print(&#39;       corresponding to &#39;, ncblock, &#39; original blocks&#39;)
+
+    #
+    # create groupe &#39;/header&#39; and fill it
+    #
+    header_grp = fout.create_group(&#39;header&#39;)
+    header_grp.attrs[&#39;file_type&#39;]=&#39;reducted_format&#39;
+    header_grp.attrs[&#39;version&#39;]=__version_reducted_format__
+    header_grp.attrs[&#39;transposition&#39;]= 0
+    header_grp.attrs[&#39;data_type&#39;]=&#39;raw&#39;
+    header_grp.attrs[&#39;gauge_length&#39;]=dhd[&#39;gauge_length&#39;]
+    header_grp.attrs[&#39;prf&#39;]=dhd[&#39;prf&#39;]
+    header_grp.attrs[&#39;sampling_res&#39;]=dhd[&#39;sampling_res&#39;]
+    header_grp.attrs[&#39;derivation_time&#39;]=dhd[&#39;derivation_time&#39;]
+    header_grp.attrs[&#39;dx&#39;]=dhd[&#39;dx&#39;]*ddecim
+    header_grp.attrs[&#39;nspace&#39;]=output_space_size
+    header_grp.attrs[&#39;ospace&#39;]=dhd[&#39;ospace&#39;]
+    header_grp.attrs[&#39;dt&#39;]=dhd[&#39;dt&#39;]*tdecim
+    header_grp.attrs[&#39;ntime&#39;]=output_time_size
+    header_grp.attrs[&#39;otime&#39;]=dhd[&#39;otime&#39;]
+
+    # create dataset that contains time vector
+    fout.create_dataset(&#39;time&#39;, data=time_out, dtype=&#39;f8&#39;)
+
+    # create dataset that contains distance vector
+    fout.create_dataset(&#39;distance&#39;, data=dist_out, dtype=&#39;f8&#39;)
+
+    # create dataset that contains decimated traces
+    # phase1, phase2, phase3,phase4
+    section_list = []
+    for i in range(0,4):
+        if use_compression:
+            dset = fout.create_dataset(&#39;phase&#39;+str(i), (output_time_size, output_space_size),
+                                  chunks=(chunk_size0, chunk_size1),
+                                  dtype=&#39;i1&#39;, compression=&#34;lzf&#34;)
+        else:
+            dset = fout.create_dataset(&#39;phase&#39;+str(i), (output_time_size, output_space_size),
+                                  chunks=(chunk_size0, chunk_size1),
+                                  dtype=&#39;i1&#39;)
+        # store it in a list
+        section_list.append(dset)
+    #
+    # --------------------------- loop reading blocks ----------------------
+    #
+    chan_in = np.empty((block_time_size, input_space_size), np.byte, &#39;C&#39;)
+    buff_out = np.empty((chunk_size0*tdecim, output_space_size, 4), np.byte, &#39;C&#39;)
+    time_offset = 0
+    last_block_read = list(range(first_block, last_block, step_block))[-1]
+    for i, block in enumerate(range(first_block, last_block, step_block)):
+        if verbose &gt;= 1:
+            print(&#39;    &#39; + str(block - first_block + 1) + &#39;/&#39; + str(last_block - first_block) + &#39; blocks&#39;, end=&#39;\r&#39;)
+
+        # set block indices to read
+        if block == first_block:
+            block_start = block_indices[0][0]
+            block_end = block_indices[0][1]
+        elif block == last_block_read:
+            block_start = block_indices[2][0]
+            block_end = block_indices[2][1]
+        else:
+            block_start = block_indices[1][0]
+            block_end = block_indices[1][1]
+
+        # Fill output buffer; when it&#39;s full, write datasets
+        jchunk = i % ncblock
+
+        for phase in range(0,4):
+        # copy current block data into buffer
+            chan_in[:, :] = hd.chan_node[phase][block, block_start:block_end, :]
+            buff_out[jchunk * block_time_size:(jchunk + 1) * block_time_size, :, phase] = chan_in[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+
+        if jchunk == ncblock - 1:
+            # write it in all spatial dataset and decimate here for spatial decimation
+            for phase in range(0,4):
+                buf_tmp = np.squeeze(buff_out[0:block_time_size*ncblock:tdecim, :, phase])
+                dset = section_list[phase]
+                dset[time_offset:time_offset + chunk_size0, :] = buf_tmp  # buff_out[0:block_time_size:tdecim, :]
+            time_offset += chunk_size0
+
+    # end of file reached, write partially filled buffer
+    if jchunk != ncblock - 1:
+        for phase in range(0, 4):
+            dset = section_list[phase]
+            buf_tmp = np.squeeze(buff_out[0:(jchunk + 1) * block_time_size:tdecim, :, phase])
+            dset[time_offset:time_offset + (jchunk + 1) * decim_blk_time_size, :] = buf_tmp
+            #buff_out[0:(jchunk + 1) * block_time_size:tdecim, 0:input_space_size:ddecim, phase]
+
+    a1.close()
+    fout.close()
+
+#
+# ========================================= RAW2STRAIN()  ============================
+#
+def raw2strain(filein, fileout, GL, DT, order_time=2, order_space=2, trange=None, drange=None, tdecim=1, ddecim=1,
+               kchunk=1, skip=True, verbose=0, use_compression=True, transpose=False):
+    &#34;&#34;&#34;
+    ##Description
+    Read a DAS section from an hdf5 Febus-Optics raw format, extract the requested part or all of it,
+    remove data redundancy, compute the strain[rate] and store it in a reducted file format
+
+    !!! Decimation are performed without any lowpass filtering !!!
+
+    After reduction, the records are stored in a 2D array [time x space] where space = fast axis
+
+    ##input
+        filein, fileout: hdf5 (.h5) file to read/write
+        GL: Gauge length (in meter)
+        DT: Derivation time (IN SECOND)
+        order_time:  finite derivation order in time, no derivation if set to 0 (default 2)
+        order_space: finite derivation order in space (default 2)
+        trange:  time range in sec (start,end), (default = None, everything is read)
+        drange:  distance range in meter (not km) (start,end), (default = None, everything is read)
+        ddecim:  distance decimation factor (default=1)
+        tdecim:  time decimation factor (default=1)
+        kchunk:  the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+        skip:    skip redundant block when reading data (default=true)
+        verbose: be verbose (default=0, minimum message level)
+        use_compression: use lz compression on writing (default True)
+        transpose: write a reducted file that is transposed (space x time) or not transposed (time x space)
+
+    ##Reducted Output format
+    Use a minimalist format in HDF5 with one group and several Datasets
+
+        group  /
+        header attribute = metadata
+        dataset distance = distance vector
+        dataset time =     time vector
+        datasets for data depend if data are transposed or not from the original [time x space] ordering
+
+    ##Reading non transposed reducted output file
+    With python using A1File.read(filename,format=&#39;reducted&#39;)
+    or as following example:
+
+        &gt;&gt;&gt;import h5py
+        &gt;&gt;&gt;f=h5py.File(filename)
+        &gt;&gt;&gt;header=f[&#39;header&#39;].attrs   # header dictionnary
+        &gt;&gt;&gt;print(header.keys()   )    # list of metadata
+        &gt;&gt;&gt;dist=f[&#39;distance&#39;]         # distance vector
+        &gt;&gt;&gt;time=f[&#39;time&#39;]             # time vector
+        &gt;&gt;&gt;data=f[&#39;strain&#39;]           # 2D strain[rate] ndarray [ntime x nspace]
+
+    ##Reading transposed reducted output file
+    With python using A1File.read(filename,format=&#39;reducted&#39;)
+    or as following example:
+
+        &gt;&gt;&gt;import h5py
+        &gt;&gt;&gt;f=h5py.File(filename)
+        &gt;&gt;&gt;header=f[&#39;header&#39;].attrs   # header dictionnary
+        &gt;&gt;&gt;print(header.keys()   )    # list of metadata
+        &gt;&gt;&gt;dist=f[&#39;distance&#39;]         # distance vector
+        &gt;&gt;&gt;time=f[&#39;time&#39;]             # time vector
+        &gt;&gt;&gt;# Two ways to read all or individual traces
+        &gt;&gt;&gt;# read trace number 9
+        &gt;&gt;&gt;trace9 = f[&#39;/Traces/9&#39;][:]
+        &gt;&gt;&gt;# read the full section
+        &gt;&gt;&gt;# vsection is a virtual HDF5 2D array
+        &gt;&gt;&gt;section=f[&#39;/vsection&#39;][:,:]  #2D ndarray [nspace x ntime] (float64)
+        &gt;&gt;&gt;# read only the first 10 traces
+        &gt;&gt;&gt;section=f[&#39;/vsection&#39;][0:10,:]
+
+    &#34;&#34;&#34;
+
+    import h5py
+    from .core import open
+    from a1das import _raw2strPy
+    from ._a1das_exception import WrongValueError
+
+    #
+    #  --------------------------- open file for reading
+    #
+    a1 = open(filein, format=&#39;febus&#39;)
+    #
+    #  --------------------------- open file for writing
+    #
+    fout = h5py.File(fileout, &#39;w&#39;)
+
+    #
+    #  --------------------------- read header ----------------------
+    #
+    hd = a1.file_header
+    dhd = a1.data_header
+    if hd.chan_node == None:
+        print(&#39;Cannot read raw file&#39;)
+        exit(-1)
+    #
+    #  --------------------------- block time size
+    #  we read the full block and skip redundant blocks
+    #  or read half of it and read all blocks
+    if skip:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;])
+    else:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;] / 2)
+
+    #
+    # check whether time decimation factor is ok or not, it must divide
+    # the chunk size
+    #
+    if (block_time_size) % tdecim != 0:
+        print(&#39;Error: time decimation factor must be a divider of the chunk size =&#39;, block_time_size)
+        print(&#39;try :&#39;)
+        for i in range(2, 100):
+            if (block_time_size) % i == 0:
+                print(&#39;  tdecim=&#39;, i)
+        exit(0)
+
+    #
+    #   --------------------------- compute time bounds and time vector -----------------
+    #
+
+    # indices for chunk (block) of data
+    # indices for first and last time record in the first and last block
+    # Vector of times in range[from_time, to_time] with tdecim
+    # (block, trange, skip, align_on_block, tdecim)
+    first_block, last_block, step_block, \
+    time_out, block_indices = a1._get_time_bounds(trange=trange, skip=skip)
+
+
+    #
+    #     ---------------------------  compute distance bounds and indices ----------------
+    #
+    dist_out, dist_ix, dist_in = a1._get_space_bounds(drange, ddecim)
+
+    #
+    # ---------------------------   print summary  -------------------
+    #
+    print(&#39;&gt; Initialization&#39;)
+    print(&#39;&gt; --------------&#39;)
+    print(&#39;&gt; Data extraction from [&#39;, time_out[0], &#39; - &#39;, time_out[-1], &#39;] sec and from [&#39;, dist_out[0], &#39; - &#39;,
+          dist_out[-1], &#39;] m&#39;)
+    print(&#39;&gt; sampling rate are :&#39;,dhd[&#39;dt&#39;],&#39; sec and &#39;,dhd[&#39;dx&#39;],&#39; m&#39;)
+
+    #
+    # --------------------------- size of data to be written ---------------------------
+    #
+    output_time_size = len(time_out)  # number of time samples with decimation tdecim
+    output_space_size = len(dist_out)  # number of space samples with decimation ddecim
+    input_space_size = len(dist_in)  # number of space samples without decimation
+    # input_time_size = block_time_size
+
+    #
+    #   --------------------------- write header dataset structure on output file
+    #   Create a single dataset for all records, stored with a chunk size
+    #   approximately equal to : kchunk * original_chunk_size
+    #
+    # Each block contains decim_block_time_size time samples
+    # we will write decim_block_time_size * tdecim * kchunk time sample per chunk
+    # A chunk is filled when ncblocks are read
+    decim_blk_time_size = int(block_time_size / tdecim)
+    decim_blk_space_size = output_space_size
+    time_chunk_size = (decim_blk_time_size * tdecim * kchunk)
+    if time_chunk_size &gt; output_time_size:
+        time_chunk_size = output_time_size
+        kchunk = int(time_chunk_size / block_time_size) + 1
+    space_chunk_size = decim_blk_space_size
+    #TODO verifier que les lignes suivantes sont bonnes, il manque pas ddecim dans chunck_size?
+    if not transpose:
+        chunk_size = time_chunk_size * space_chunk_size
+    else:
+        chunk_size = time_chunk_size
+    print(&#39;Original block size is &#39;, block_time_size * input_space_size, &#39; values&#39;)
+    print(&#39;Decimed block size is &#39;, decim_blk_time_size * output_space_size, &#39; values&#39;)
+    print(&#39;Original time block size is &#39;, block_time_size, &#39; values&#39;)
+    print(&#39;Decimed time block size is &#39;, decim_blk_time_size, &#39; values&#39;)
+    print(&#39;total time size is &#39;,output_time_size, &#39; values&#39;)
+    print(&#39;Chunck size is &#39;, chunk_size, &#39; values&#39;)
+    ncblock = kchunk * tdecim
+    print(&#39;       corresponding to &#39;, ncblock, &#39; original blocks&#39;)
+
+    #
+    # create groupe &#39;/header&#39; and fill it
+    #
+    header_grp = fout.create_group(&#39;header&#39;)
+    header_grp.attrs[&#39;file_type&#39;]=&#39;reducted_format&#39;
+    header_grp.attrs[&#39;version&#39;]= __version_reducted_format__
+    if transpose:
+        header_grp.attrs[&#39;transposition&#39;]=1
+    else:
+        header_grp.attrs[&#39;transposition&#39;]=0
+    if order_time == 0:
+        header_grp.attrs[&#39;data_type&#39;]=&#39;strain&#39;
+        header_grp.attrs[&#39;derivation_time&#39;] = 0.
+    else:
+        header_grp.attrs[&#39;data_type&#39;]=&#39;strain-rate&#39;
+        header_grp.attrs[&#39;derivation_time&#39;] = DT
+
+    header_grp.attrs[&#39;gauge_length&#39;]=dhd[&#39;gauge_length&#39;]
+    header_grp.attrs[&#39;prf&#39;]=dhd[&#39;prf&#39;]
+    header_grp.attrs[&#39;sampling_res&#39;]=dhd[&#39;sampling_res&#39;]
+    header_grp.attrs[&#39;dx&#39;]=dhd[&#39;dx&#39;]*ddecim
+    header_grp.attrs[&#39;nspace&#39;]=output_space_size
+    header_grp.attrs[&#39;ospace&#39;]=dhd[&#39;ospace&#39;]
+    header_grp.attrs[&#39;dt&#39;]=dhd[&#39;dt&#39;]*tdecim
+    header_grp.attrs[&#39;ntime&#39;]=output_time_size
+    header_grp.attrs[&#39;otime&#39;]=dhd[&#39;otime&#39;]
+    header_grp.attrs[&#39;prf&#39;]=dhd[&#39;prf&#39;]
+    header_grp.attrs[&#39;sampling_res&#39;]=dhd[&#39;sampling_res&#39;]
+
+
+    #
+    # test GL and DT parameters
+    #
+    if GL&lt;dhd[&#39;sampling_res&#39;]/100:
+        raise WrongValueError(&#39;Gauge length is smaller than sampling resolutionv&#39;+str(GL)+&#39;&lt;&#39;+str(dhd[&#39;sampling_res&#39;]))
+    if DT &lt; (1./dhd[&#39;prf&#39;]):
+        raise WrongValueError(&#39;time derivation is smaller than 1/Pulse_Rate_Frequency&#39;)
+
+    # create dataset that contains time vector
+    fout.create_dataset(&#39;time&#39;, data=time_out, dtype=&#39;f8&#39;)
+
+    # create dataset that contains distance vector
+    fout.create_dataset(&#39;distance&#39;, data=dist_out, dtype=&#39;f8&#39;)
+
+    # create dataset that contains strain[rate] section
+    if transpose:
+        strain_dset = _create_h5_group_transposed(fout, fileout, output_space_size, output_time_size,
+                                                     time_chunk_size, compression=use_compression)
+    else:
+        strain_dset = _create_h5_group_not_transposed(fout, output_space_size, output_time_size,
+                                                 time_chunk_size, space_chunk_size, compression=use_compression)
+
+    #
+    # --------------------------- loop reading blocks ----------------------
+    #
+    # TODO verifier les tdecim suprimés dans les 3 lignes dessous, bizarre car déjà pris en compte au dessus
+    buff_out = np.empty((time_chunk_size, output_space_size, 4), np.int8, &#39;C&#39;)
+    if transpose:
+        strain = np.empty((output_space_size, time_chunk_size), np.float64, &#39;C&#39;)
+    else:
+        strain = np.empty((time_chunk_size, output_space_size), np.float64, &#39;C&#39;)
+
+    time_offset = 0
+    from timeit import default_timer as timer
+    last_block_read = list(range(first_block, last_block, step_block))[-1]
+    for i, block in enumerate(range(first_block, last_block, step_block)):
+        if verbose &gt;= 1:
+            print(&#39;    &#39; + str(block - first_block + 1) + &#39;/&#39; + str(last_block - first_block) + &#39; blocks&#39;, end=&#39;\r&#39;)
+
+        # set block indices to read
+        if block == first_block:
+            block_start = block_indices[0][0]
+            block_end = block_indices[0][1]
+        elif block == last_block_read:
+            block_start = block_indices[2][0]
+            block_end = block_indices[2][1]
+        else:
+            block_start = block_indices[1][0]
+            block_end = block_indices[1][1]
+
+        # Fill output buffer; when it&#39;s full, write datasets
+        jchunk = i % ncblock
+
+        #
+        # Read the full bock and compute angle from real and imaginary part
+        # phase 1
+        start = timer()
+        phase1_r = hd.chan_node[0][block, block_start:block_end, :]
+        phase1_i = hd.chan_node[1][block, block_start:block_end, :]
+        # copy decimated spatial data into temporary buffer
+        buff_out[jchunk * block_time_size:(jchunk + 1) * block_time_size, :, 0] = \
+                                           phase1_r[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        buff_out[jchunk * block_time_size:(jchunk + 1) * block_time_size, :, 1] = \
+                                           phase1_i[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        
+        # Phase2, same as above
+        phase2_r = hd.chan_node[2][block, block_start:block_end, :]
+        phase2_i = hd.chan_node[3][block, block_start:block_end, :]
+        buff_out[jchunk * block_time_size:(jchunk + 1) * block_time_size, :, 2] = \
+                                           phase2_r[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        buff_out[jchunk * block_time_size:(jchunk + 1) * block_time_size, :, 3] = \
+                                           phase2_i[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        end = timer()
+        if verbose &gt;= 1:
+            print(&#39;elapsed time when reading one block:&#39;,end-start)
+
+        #
+        # We have filled the temporary buffer
+        # extract time decimated part and convert to strain
+        #
+        if jchunk == ncblock - 1:
+            start = timer()
+            phase1_r = np.squeeze(buff_out[0:block_time_size * ncblock:tdecim, :, 0]).astype(&#39;int32&#39;)
+            phase1_i = np.squeeze(buff_out[0:block_time_size * ncblock:tdecim, :, 1]).astype(&#39;int32&#39;)
+            phase2_r = np.squeeze(buff_out[0:block_time_size * ncblock:tdecim, :, 2]).astype(&#39;int32&#39;)
+            phase2_i = np.squeeze(buff_out[0:block_time_size * ncblock:tdecim, :, 3]).astype(&#39;int32&#39;)
+            end = timer()
+            if verbose &gt;= 1:
+                print(&#39;elapsed time when decimating time:&#39;, end - start)
+            strain, GL, DT = _raw2strPy.raw2strpy(strain, phase1_r, phase1_i, phase2_r, phase2_i, dist_out, time_out,
+                                GL, DT, order_space, order_time, verbose)
+            # write to file
+            start = timer()
+            if not transpose:
+                strain_dset[time_offset:time_offset + time_chunk_size, :] = strain
+
+            else:
+                # transposition is performed here in python, faster in fortran?
+                for j, jj in enumerate(range(0,output_space_size,ddecim)):
+                    dset = strain_dset[j]
+                    dset[time_offset:time_offset + time_chunk_size] = strain[jj,:]
+            end = timer()
+
+            if verbose &gt;= 1:
+                print(&#39;elapsed time when  writing:&#39;, end - start)
+            time_offset += time_chunk_size
+
+    # end of file reached, write partially filled buffer
+    if jchunk != ncblock - 1:
+        phase1_r = np.squeeze(buff_out[0:(jchunk + 1) * block_time_size:tdecim, :, 0])
+        phase1_i = np.squeeze(buff_out[0:(jchunk + 1) * block_time_size:tdecim, :, 1])
+        phase2_r = np.squeeze(buff_out[0:(jchunk + 1) * block_time_size:tdecim, :, 2])
+        phase2_i = np.squeeze(buff_out[0:(jchunk + 1) * block_time_size:tdecim, :, 3])
+        strain, GL, DT = _raw2strPy.raw2strpy(strain, phase1_r, phase1_i, phase2_r, phase2_i, dist_out, time_out,
+                            GL, DT, order_space, order_time, verbose)
+        if not transpose:
+            strain_dset[time_offset:time_offset + (jchunk + 1) * decim_blk_time_size, :] = strain[0:(jchunk + 1) * block_time_size:tdecim, :]
+
+        else:
+            for j, jj in enumerate(range(0, output_space_size, ddecim)):
+                dset = strain_dset[j]
+                dset[time_offset:time_offset + (jchunk + 1) * decim_blk_time_size] = strain[jj, 0:(jchunk + 1) * block_time_size:tdecim]
+
+    #
+    # update header values with value from raw2str
+    #
+    header_grp.attrs[&#39;gauge_length&#39;] = GL
+    header_grp.attrs[&#39;derivation_time&#39;] = DT
+
+    a1.close()
+    start = timer()
+    fout.close()
+    end = timer()
+    if verbose &gt;= 1:
+        print(&#39;elapsed time when closing:&#39;, end - start)
+
+
+#
+# ========================================= RRAW2INFO()  ============================
+#
+def _rraw2info(file):
+    &#34;&#34;&#34;
+    Read and print infos from a phase binary file obtained after reduction by rawreduction_notranspose()
+    file:
+
+    &#34;&#34;&#34;
+    import h5py
+    f = h5py.File(file, &#39;r&#39;)
+
+    # read distance and time vector
+    distance_node = f[&#39;/distance&#39;]
+    distance = distance_node[:]
+    ndist = distance.shape[0]
+    time_node = f[&#39;/time&#39;]
+    time = time_node[:]
+    ntime = time.shape[0]
+
+    print(&#39;file &#39;,file, &#39;contains:&#39;)
+    print(&#39;time &#39;,time[0],&#39; to &#39;,time[-1],&#39;; dt =&#39;,time[1]-time[0], &#39;ntime =&#39;,ntime)
+    print(&#39;distance &#39;, distance[0], &#39; to &#39;, distance[-1], &#39;; dx =&#39;, distance[1] - distance[0], &#39;ndist= &#39;,ndist)
+
+    f.close()
+
+
+#
+# ========================================= RRAW2INFO()  ============================
+#
+def _rraw2strain(file, gauge_length, delta_t, order_time=2, order_space=2, drange=None, trange=None,verbose=0):
+    &#34;&#34;&#34;
+    Read  a phase binary file obtained from Raw data after reduction by &lt;raw_reduction_notranspose&gt; and convert to strain
+
+     file: input file in hdf5 format obtained by &lt;rawreduction_notranspose()&gt;
+     gauge_length: distance vector
+     delta_t: time vector
+     order_time: FD order for time
+     order_space: FD order for space
+     drange: [min, max] range for distance (m), default None
+     trange: [min, max] range for time (sec), default None
+    :return:
+    &#34;&#34;&#34;
+
+    import h5py
+    from a1das import _raw2strPy
+
+    f = h5py.File(file, &#39;r&#39;)
+
+# read distance and time vector
+    distance_node = f[&#39;/distance&#39;]
+    distance = distance_node[:]
+    ndist = distance.shape[0]
+    time_node = f[&#39;/time&#39;]
+    time = time_node[:]
+    ntime = time.shape[0]
+    dist_min = distance[0]
+    dist_max = distance[-1]
+    time_min = time[0]
+    time_max = time[-1]
+    dx = distance[1] - distance[0]
+    dt = time[1] - time[0]
+
+# set ranges
+    if not drange:
+        drange=(0, ndist)
+    else:
+        drange[0] = int((drange[0] - dist_min)/dx)
+        drange[1] = int((drange[1] - dist_min) / dx)
+        if drange[0] &gt; ndist and drange[1] &gt; ndist:
+            print(&#39;wrong time window, &gt; time_max&#39;)
+            exit()
+        if drange[0] &lt; 0 and drange[1] &lt; 0:
+            print(&#39;wrong time window &lt; time_min&#39;)
+            exit()
+        if drange[0] &lt; 0:
+            drange[0] = 0
+        if drange[1] &gt; ndist:
+            drange[1] = ndist
+
+
+    if not trange:
+        trange=(0, ntime)
+    else:
+        trange[0] = int((trange[0] - time_min)/dt)
+        trange[1] = int((trange[1] - time_min)/dt)
+        if trange[0] &gt; ntime and trange[1] &gt; ntime:
+            print(&#39;wrong time window, &gt; time_max&#39;)
+            exit()
+        if trange[0] &lt; 0 and trange[1] &lt; 0:
+            print(&#39;wrong time window &lt; time_min&#39;)
+            exit()
+        if trange[0] &lt; 0:
+            trange[0] = 0
+        if trange[1] &gt; ntime:
+            trange[1] = ntime
+
+    time = time[trange[0]:trange[1]]
+    distance = distance[drange[0]:drange[1]]
+
+# read  phase
+    p1_node = f[&#39;/phase0&#39;]
+    phase1_r = p1_node[trange[0]:trange[1], drange[0]:drange[1]]
+    p2_node = f[&#39;/phase1&#39;]
+    phase1_i = p2_node[ trange[0]:trange[1], drange[0]:drange[1]]
+    p3_node = f[&#39;/phase2&#39;]
+    phase2_r = p3_node[trange[0]:trange[1], drange[0]:drange[1]]
+    p4_node = f[&#39;/phase3&#39;]
+    phase2_i = p4_node[ trange[0]:trange[1], drange[0]:drange[1]]
+
+#convert to strain
+    strain = np.empty(phase1_r.shape,dtype=&#39;float64&#39;)
+    _raw2strPy.raw2strpy(strain, phase1_r, phase1_i, phase2_r, phase2_i, drange, trange,
+                        gauge_length, delta_t, order_space, order_time, verbose)
+
+
+    f.close()
+
+    return distance, time, strain
+
+#
+# ================================================ _create_h5_group_transposed() =========================
+#
+def _create_h5_group_transposed(fout, fileout, space_size, time_size, chunk_size, compression=True):
+    &#34;&#34;&#34;
+    Create the hdf5 group &lt;Traces&gt; to write transposed data in a reducted file.
+    Data are written in different dataset under &lt;Traces&gt; group = &lt;Traces/0&gt;; &lt;Traces/1&gt;; ...
+
+    Data can also be accessed by reference as the  entire dataset named &lt;section&gt;
+
+    Data can also be accessed through a virtual dataset called &lt;vsection&gt;
+
+    input:
+    fout    = hdf5 file descriptor on output
+    fileout = filename for output (used to add a virtual dataset)
+    space_size = dimension along spatial coordinates
+    time_size = dimension along time coordinates
+    chunk_size = hdf5 chunck size
+    compression: True or False
+
+    return:
+    section_list = list of h5py dataset handles to write in (one per trace)
+    &#34;&#34;&#34;
+    import h5py
+
+    #
+    # create group &#39;/Traces&#39;
+    #
+    grp = fout.create_group(&#39;Traces&#39;)
+
+    # create dataset that contains reference (!! version &gt;=2.10.0)
+    if hasattr(h5py,&#39;ref_dtype&#39;):
+        section_ref = fout.create_dataset(&#39;section&#39;, (space_size,), dtype=h5py.ref_dtype)
+    else:
+        ref_dtype = h5py.special_dtype(ref=h5py.Reference)
+        section_ref = fout.create_dataset(&#39;section&#39;, (space_size,), dtype=ref_dtype)
+
+    #
+    # create datasets that contains traces in group &#34;Traces&#34;
+    #
+    section_list = []
+    for i in range(0, space_size): #modifOC_ATTENTION, ddecim n&#39;est pas pris en compte dans output_space_size ?
+        # define a dataset per spatial location
+        if compression:
+            dset = grp.create_dataset(str(i), (time_size,), chunks=(chunk_size,), dtype=&#39;f4&#39;,compression=&#34;lzf&#34;)
+        else:
+            dset = grp.create_dataset(str(i), (time_size,), chunks=(chunk_size,), dtype=&#39;f4&#39;, compression=&#34;lzf&#34;)
+
+        # store it in a list
+        section_list.append(dset)
+
+        # set dataset attribute
+        if hasattr(h5py, &#39;ref_dtype&#39;):
+            dset.attrs.create(&#39;H5PATH&#39;,&#39;/Traces/&#39;+str(i))
+
+        # make link between reference and dataset
+        section_ref[i] = dset.ref
+
+    #
+    # create virtual dataset
+    #
+    layout = h5py.VirtualLayout(shape=(space_size, time_size), dtype=&#39;f4&#39;)
+    for i in range(0, space_size):
+        layout[i]= h5py.VirtualSource(fileout, &#39;Traces/&#39;+str(i),shape=(time_size,))
+    fout.create_virtual_dataset(&#39;vsection&#39;,layout)
+
+    return section_list
+
+#
+# ================================================ _create_h5_group_not_transposed() =========================
+#
+def _create_h5_group_not_transposed(fout, space_size, time_size, chunk_time_size, chunk_space_size, compression=True):
+    &#34;&#34;&#34;
+    Create the hdf5 groups to write not transposed data in a reducted file.
+
+    input:
+    fout    = hdf5 file descriptor on output
+    space_size = dimension along spatial coordinates
+    time_size = dimension along time coordinates
+    chunk_time_size = hdf5 chunck size along time dimension
+    chunk_space_size = hdf5 chunck size along spatial dimension
+    compression = bool, True or False
+
+    return:
+    dset = h5py dataset handle to write in (one per trace)
+    &#34;&#34;&#34;
+
+    if compression:
+        dset = fout.create_dataset(&#39;strain&#39;, (time_size, space_size),
+                                   chunks=(chunk_time_size, chunk_space_size),
+                                   dtype=&#39;f4&#39;, compression=&#34;lzf&#34;)
+    else:
+        dset = fout.create_dataset(&#39;strain&#39;, (time_size, space_size),
+                                   chunks=(chunk_time_size, chunk_space_size),
+                                   dtype=&#39;f4&#39;)
+
+    return dset</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="a1das.reduction.raw2strain"><code class="name flex">
+<span>def <span class="ident">raw2strain</span></span>(<span>filein, fileout, GL, DT, order_time=2, order_space=2, trange=None, drange=None, tdecim=1, ddecim=1, kchunk=1, skip=True, verbose=0, use_compression=True, transpose=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="description">Description</h2>
+<p>Read a DAS section from an hdf5 Febus-Optics raw format, extract the requested part or all of it,
+remove data redundancy, compute the strain[rate] and store it in a reducted file format</p>
+<p>!!! Decimation are performed without any lowpass filtering !!!</p>
+<p>After reduction, the records are stored in a 2D array [time x space] where space = fast axis</p>
+<h2 id="input">input</h2>
+<pre><code>filein, fileout: hdf5 (.h5) file to read/write
+GL: Gauge length (in meter)
+DT: Derivation time (IN SECOND)
+order_time:  finite derivation order in time, no derivation if set to 0 (default 2)
+order_space: finite derivation order in space (default 2)
+trange:  time range in sec (start,end), (default = None, everything is read)
+drange:  distance range in meter (not km) (start,end), (default = None, everything is read)
+ddecim:  distance decimation factor (default=1)
+tdecim:  time decimation factor (default=1)
+kchunk:  the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+skip:    skip redundant block when reading data (default=true)
+verbose: be verbose (default=0, minimum message level)
+use_compression: use lz compression on writing (default True)
+transpose: write a reducted file that is transposed (space x time) or not transposed (time x space)
+</code></pre>
+<h2 id="reducted-output-format">Reducted Output format</h2>
+<p>Use a minimalist format in HDF5 with one group and several Datasets</p>
+<pre><code>group  /
+header attribute = metadata
+dataset distance = distance vector
+dataset time =     time vector
+datasets for data depend if data are transposed or not from the original [time x space] ordering
+</code></pre>
+<h2 id="reading-non-transposed-reducted-output-file">Reading non transposed reducted output file</h2>
+<p>With python using A1File.read(filename,format='reducted')
+or as following example:</p>
+<pre><code>&gt;&gt;&gt;import h5py
+&gt;&gt;&gt;f=h5py.File(filename)
+&gt;&gt;&gt;header=f['header'].attrs   # header dictionnary
+&gt;&gt;&gt;print(header.keys()   )    # list of metadata
+&gt;&gt;&gt;dist=f['distance']         # distance vector
+&gt;&gt;&gt;time=f['time']             # time vector
+&gt;&gt;&gt;data=f['strain']           # 2D strain[rate] ndarray [ntime x nspace]
+</code></pre>
+<h2 id="reading-transposed-reducted-output-file">Reading transposed reducted output file</h2>
+<p>With python using A1File.read(filename,format='reducted')
+or as following example:</p>
+<pre><code>&gt;&gt;&gt;import h5py
+&gt;&gt;&gt;f=h5py.File(filename)
+&gt;&gt;&gt;header=f['header'].attrs   # header dictionnary
+&gt;&gt;&gt;print(header.keys()   )    # list of metadata
+&gt;&gt;&gt;dist=f['distance']         # distance vector
+&gt;&gt;&gt;time=f['time']             # time vector
+&gt;&gt;&gt;# Two ways to read all or individual traces
+&gt;&gt;&gt;# read trace number 9
+&gt;&gt;&gt;trace9 = f['/Traces/9'][:]
+&gt;&gt;&gt;# read the full section
+&gt;&gt;&gt;# vsection is a virtual HDF5 2D array
+&gt;&gt;&gt;section=f['/vsection'][:,:]  #2D ndarray [nspace x ntime] (float64)
+&gt;&gt;&gt;# read only the first 10 traces
+&gt;&gt;&gt;section=f['/vsection'][0:10,:]
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def raw2strain(filein, fileout, GL, DT, order_time=2, order_space=2, trange=None, drange=None, tdecim=1, ddecim=1,
+               kchunk=1, skip=True, verbose=0, use_compression=True, transpose=False):
+    &#34;&#34;&#34;
+    ##Description
+    Read a DAS section from an hdf5 Febus-Optics raw format, extract the requested part or all of it,
+    remove data redundancy, compute the strain[rate] and store it in a reducted file format
+
+    !!! Decimation are performed without any lowpass filtering !!!
+
+    After reduction, the records are stored in a 2D array [time x space] where space = fast axis
+
+    ##input
+        filein, fileout: hdf5 (.h5) file to read/write
+        GL: Gauge length (in meter)
+        DT: Derivation time (IN SECOND)
+        order_time:  finite derivation order in time, no derivation if set to 0 (default 2)
+        order_space: finite derivation order in space (default 2)
+        trange:  time range in sec (start,end), (default = None, everything is read)
+        drange:  distance range in meter (not km) (start,end), (default = None, everything is read)
+        ddecim:  distance decimation factor (default=1)
+        tdecim:  time decimation factor (default=1)
+        kchunk:  the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+        skip:    skip redundant block when reading data (default=true)
+        verbose: be verbose (default=0, minimum message level)
+        use_compression: use lz compression on writing (default True)
+        transpose: write a reducted file that is transposed (space x time) or not transposed (time x space)
+
+    ##Reducted Output format
+    Use a minimalist format in HDF5 with one group and several Datasets
+
+        group  /
+        header attribute = metadata
+        dataset distance = distance vector
+        dataset time =     time vector
+        datasets for data depend if data are transposed or not from the original [time x space] ordering
+
+    ##Reading non transposed reducted output file
+    With python using A1File.read(filename,format=&#39;reducted&#39;)
+    or as following example:
+
+        &gt;&gt;&gt;import h5py
+        &gt;&gt;&gt;f=h5py.File(filename)
+        &gt;&gt;&gt;header=f[&#39;header&#39;].attrs   # header dictionnary
+        &gt;&gt;&gt;print(header.keys()   )    # list of metadata
+        &gt;&gt;&gt;dist=f[&#39;distance&#39;]         # distance vector
+        &gt;&gt;&gt;time=f[&#39;time&#39;]             # time vector
+        &gt;&gt;&gt;data=f[&#39;strain&#39;]           # 2D strain[rate] ndarray [ntime x nspace]
+
+    ##Reading transposed reducted output file
+    With python using A1File.read(filename,format=&#39;reducted&#39;)
+    or as following example:
+
+        &gt;&gt;&gt;import h5py
+        &gt;&gt;&gt;f=h5py.File(filename)
+        &gt;&gt;&gt;header=f[&#39;header&#39;].attrs   # header dictionnary
+        &gt;&gt;&gt;print(header.keys()   )    # list of metadata
+        &gt;&gt;&gt;dist=f[&#39;distance&#39;]         # distance vector
+        &gt;&gt;&gt;time=f[&#39;time&#39;]             # time vector
+        &gt;&gt;&gt;# Two ways to read all or individual traces
+        &gt;&gt;&gt;# read trace number 9
+        &gt;&gt;&gt;trace9 = f[&#39;/Traces/9&#39;][:]
+        &gt;&gt;&gt;# read the full section
+        &gt;&gt;&gt;# vsection is a virtual HDF5 2D array
+        &gt;&gt;&gt;section=f[&#39;/vsection&#39;][:,:]  #2D ndarray [nspace x ntime] (float64)
+        &gt;&gt;&gt;# read only the first 10 traces
+        &gt;&gt;&gt;section=f[&#39;/vsection&#39;][0:10,:]
+
+    &#34;&#34;&#34;
+
+    import h5py
+    from .core import open
+    from a1das import _raw2strPy
+    from ._a1das_exception import WrongValueError
+
+    #
+    #  --------------------------- open file for reading
+    #
+    a1 = open(filein, format=&#39;febus&#39;)
+    #
+    #  --------------------------- open file for writing
+    #
+    fout = h5py.File(fileout, &#39;w&#39;)
+
+    #
+    #  --------------------------- read header ----------------------
+    #
+    hd = a1.file_header
+    dhd = a1.data_header
+    if hd.chan_node == None:
+        print(&#39;Cannot read raw file&#39;)
+        exit(-1)
+    #
+    #  --------------------------- block time size
+    #  we read the full block and skip redundant blocks
+    #  or read half of it and read all blocks
+    if skip:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;])
+    else:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;] / 2)
+
+    #
+    # check whether time decimation factor is ok or not, it must divide
+    # the chunk size
+    #
+    if (block_time_size) % tdecim != 0:
+        print(&#39;Error: time decimation factor must be a divider of the chunk size =&#39;, block_time_size)
+        print(&#39;try :&#39;)
+        for i in range(2, 100):
+            if (block_time_size) % i == 0:
+                print(&#39;  tdecim=&#39;, i)
+        exit(0)
+
+    #
+    #   --------------------------- compute time bounds and time vector -----------------
+    #
+
+    # indices for chunk (block) of data
+    # indices for first and last time record in the first and last block
+    # Vector of times in range[from_time, to_time] with tdecim
+    # (block, trange, skip, align_on_block, tdecim)
+    first_block, last_block, step_block, \
+    time_out, block_indices = a1._get_time_bounds(trange=trange, skip=skip)
+
+
+    #
+    #     ---------------------------  compute distance bounds and indices ----------------
+    #
+    dist_out, dist_ix, dist_in = a1._get_space_bounds(drange, ddecim)
+
+    #
+    # ---------------------------   print summary  -------------------
+    #
+    print(&#39;&gt; Initialization&#39;)
+    print(&#39;&gt; --------------&#39;)
+    print(&#39;&gt; Data extraction from [&#39;, time_out[0], &#39; - &#39;, time_out[-1], &#39;] sec and from [&#39;, dist_out[0], &#39; - &#39;,
+          dist_out[-1], &#39;] m&#39;)
+    print(&#39;&gt; sampling rate are :&#39;,dhd[&#39;dt&#39;],&#39; sec and &#39;,dhd[&#39;dx&#39;],&#39; m&#39;)
+
+    #
+    # --------------------------- size of data to be written ---------------------------
+    #
+    output_time_size = len(time_out)  # number of time samples with decimation tdecim
+    output_space_size = len(dist_out)  # number of space samples with decimation ddecim
+    input_space_size = len(dist_in)  # number of space samples without decimation
+    # input_time_size = block_time_size
+
+    #
+    #   --------------------------- write header dataset structure on output file
+    #   Create a single dataset for all records, stored with a chunk size
+    #   approximately equal to : kchunk * original_chunk_size
+    #
+    # Each block contains decim_block_time_size time samples
+    # we will write decim_block_time_size * tdecim * kchunk time sample per chunk
+    # A chunk is filled when ncblocks are read
+    decim_blk_time_size = int(block_time_size / tdecim)
+    decim_blk_space_size = output_space_size
+    time_chunk_size = (decim_blk_time_size * tdecim * kchunk)
+    if time_chunk_size &gt; output_time_size:
+        time_chunk_size = output_time_size
+        kchunk = int(time_chunk_size / block_time_size) + 1
+    space_chunk_size = decim_blk_space_size
+    #TODO verifier que les lignes suivantes sont bonnes, il manque pas ddecim dans chunck_size?
+    if not transpose:
+        chunk_size = time_chunk_size * space_chunk_size
+    else:
+        chunk_size = time_chunk_size
+    print(&#39;Original block size is &#39;, block_time_size * input_space_size, &#39; values&#39;)
+    print(&#39;Decimed block size is &#39;, decim_blk_time_size * output_space_size, &#39; values&#39;)
+    print(&#39;Original time block size is &#39;, block_time_size, &#39; values&#39;)
+    print(&#39;Decimed time block size is &#39;, decim_blk_time_size, &#39; values&#39;)
+    print(&#39;total time size is &#39;,output_time_size, &#39; values&#39;)
+    print(&#39;Chunck size is &#39;, chunk_size, &#39; values&#39;)
+    ncblock = kchunk * tdecim
+    print(&#39;       corresponding to &#39;, ncblock, &#39; original blocks&#39;)
+
+    #
+    # create groupe &#39;/header&#39; and fill it
+    #
+    header_grp = fout.create_group(&#39;header&#39;)
+    header_grp.attrs[&#39;file_type&#39;]=&#39;reducted_format&#39;
+    header_grp.attrs[&#39;version&#39;]= __version_reducted_format__
+    if transpose:
+        header_grp.attrs[&#39;transposition&#39;]=1
+    else:
+        header_grp.attrs[&#39;transposition&#39;]=0
+    if order_time == 0:
+        header_grp.attrs[&#39;data_type&#39;]=&#39;strain&#39;
+        header_grp.attrs[&#39;derivation_time&#39;] = 0.
+    else:
+        header_grp.attrs[&#39;data_type&#39;]=&#39;strain-rate&#39;
+        header_grp.attrs[&#39;derivation_time&#39;] = DT
+
+    header_grp.attrs[&#39;gauge_length&#39;]=dhd[&#39;gauge_length&#39;]
+    header_grp.attrs[&#39;prf&#39;]=dhd[&#39;prf&#39;]
+    header_grp.attrs[&#39;sampling_res&#39;]=dhd[&#39;sampling_res&#39;]
+    header_grp.attrs[&#39;dx&#39;]=dhd[&#39;dx&#39;]*ddecim
+    header_grp.attrs[&#39;nspace&#39;]=output_space_size
+    header_grp.attrs[&#39;ospace&#39;]=dhd[&#39;ospace&#39;]
+    header_grp.attrs[&#39;dt&#39;]=dhd[&#39;dt&#39;]*tdecim
+    header_grp.attrs[&#39;ntime&#39;]=output_time_size
+    header_grp.attrs[&#39;otime&#39;]=dhd[&#39;otime&#39;]
+    header_grp.attrs[&#39;prf&#39;]=dhd[&#39;prf&#39;]
+    header_grp.attrs[&#39;sampling_res&#39;]=dhd[&#39;sampling_res&#39;]
+
+
+    #
+    # test GL and DT parameters
+    #
+    if GL&lt;dhd[&#39;sampling_res&#39;]/100:
+        raise WrongValueError(&#39;Gauge length is smaller than sampling resolutionv&#39;+str(GL)+&#39;&lt;&#39;+str(dhd[&#39;sampling_res&#39;]))
+    if DT &lt; (1./dhd[&#39;prf&#39;]):
+        raise WrongValueError(&#39;time derivation is smaller than 1/Pulse_Rate_Frequency&#39;)
+
+    # create dataset that contains time vector
+    fout.create_dataset(&#39;time&#39;, data=time_out, dtype=&#39;f8&#39;)
+
+    # create dataset that contains distance vector
+    fout.create_dataset(&#39;distance&#39;, data=dist_out, dtype=&#39;f8&#39;)
+
+    # create dataset that contains strain[rate] section
+    if transpose:
+        strain_dset = _create_h5_group_transposed(fout, fileout, output_space_size, output_time_size,
+                                                     time_chunk_size, compression=use_compression)
+    else:
+        strain_dset = _create_h5_group_not_transposed(fout, output_space_size, output_time_size,
+                                                 time_chunk_size, space_chunk_size, compression=use_compression)
+
+    #
+    # --------------------------- loop reading blocks ----------------------
+    #
+    # TODO verifier les tdecim suprimés dans les 3 lignes dessous, bizarre car déjà pris en compte au dessus
+    buff_out = np.empty((time_chunk_size, output_space_size, 4), np.int8, &#39;C&#39;)
+    if transpose:
+        strain = np.empty((output_space_size, time_chunk_size), np.float64, &#39;C&#39;)
+    else:
+        strain = np.empty((time_chunk_size, output_space_size), np.float64, &#39;C&#39;)
+
+    time_offset = 0
+    from timeit import default_timer as timer
+    last_block_read = list(range(first_block, last_block, step_block))[-1]
+    for i, block in enumerate(range(first_block, last_block, step_block)):
+        if verbose &gt;= 1:
+            print(&#39;    &#39; + str(block - first_block + 1) + &#39;/&#39; + str(last_block - first_block) + &#39; blocks&#39;, end=&#39;\r&#39;)
+
+        # set block indices to read
+        if block == first_block:
+            block_start = block_indices[0][0]
+            block_end = block_indices[0][1]
+        elif block == last_block_read:
+            block_start = block_indices[2][0]
+            block_end = block_indices[2][1]
+        else:
+            block_start = block_indices[1][0]
+            block_end = block_indices[1][1]
+
+        # Fill output buffer; when it&#39;s full, write datasets
+        jchunk = i % ncblock
+
+        #
+        # Read the full bock and compute angle from real and imaginary part
+        # phase 1
+        start = timer()
+        phase1_r = hd.chan_node[0][block, block_start:block_end, :]
+        phase1_i = hd.chan_node[1][block, block_start:block_end, :]
+        # copy decimated spatial data into temporary buffer
+        buff_out[jchunk * block_time_size:(jchunk + 1) * block_time_size, :, 0] = \
+                                           phase1_r[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        buff_out[jchunk * block_time_size:(jchunk + 1) * block_time_size, :, 1] = \
+                                           phase1_i[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        
+        # Phase2, same as above
+        phase2_r = hd.chan_node[2][block, block_start:block_end, :]
+        phase2_i = hd.chan_node[3][block, block_start:block_end, :]
+        buff_out[jchunk * block_time_size:(jchunk + 1) * block_time_size, :, 2] = \
+                                           phase2_r[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        buff_out[jchunk * block_time_size:(jchunk + 1) * block_time_size, :, 3] = \
+                                           phase2_i[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        end = timer()
+        if verbose &gt;= 1:
+            print(&#39;elapsed time when reading one block:&#39;,end-start)
+
+        #
+        # We have filled the temporary buffer
+        # extract time decimated part and convert to strain
+        #
+        if jchunk == ncblock - 1:
+            start = timer()
+            phase1_r = np.squeeze(buff_out[0:block_time_size * ncblock:tdecim, :, 0]).astype(&#39;int32&#39;)
+            phase1_i = np.squeeze(buff_out[0:block_time_size * ncblock:tdecim, :, 1]).astype(&#39;int32&#39;)
+            phase2_r = np.squeeze(buff_out[0:block_time_size * ncblock:tdecim, :, 2]).astype(&#39;int32&#39;)
+            phase2_i = np.squeeze(buff_out[0:block_time_size * ncblock:tdecim, :, 3]).astype(&#39;int32&#39;)
+            end = timer()
+            if verbose &gt;= 1:
+                print(&#39;elapsed time when decimating time:&#39;, end - start)
+            strain, GL, DT = _raw2strPy.raw2strpy(strain, phase1_r, phase1_i, phase2_r, phase2_i, dist_out, time_out,
+                                GL, DT, order_space, order_time, verbose)
+            # write to file
+            start = timer()
+            if not transpose:
+                strain_dset[time_offset:time_offset + time_chunk_size, :] = strain
+
+            else:
+                # transposition is performed here in python, faster in fortran?
+                for j, jj in enumerate(range(0,output_space_size,ddecim)):
+                    dset = strain_dset[j]
+                    dset[time_offset:time_offset + time_chunk_size] = strain[jj,:]
+            end = timer()
+
+            if verbose &gt;= 1:
+                print(&#39;elapsed time when  writing:&#39;, end - start)
+            time_offset += time_chunk_size
+
+    # end of file reached, write partially filled buffer
+    if jchunk != ncblock - 1:
+        phase1_r = np.squeeze(buff_out[0:(jchunk + 1) * block_time_size:tdecim, :, 0])
+        phase1_i = np.squeeze(buff_out[0:(jchunk + 1) * block_time_size:tdecim, :, 1])
+        phase2_r = np.squeeze(buff_out[0:(jchunk + 1) * block_time_size:tdecim, :, 2])
+        phase2_i = np.squeeze(buff_out[0:(jchunk + 1) * block_time_size:tdecim, :, 3])
+        strain, GL, DT = _raw2strPy.raw2strpy(strain, phase1_r, phase1_i, phase2_r, phase2_i, dist_out, time_out,
+                            GL, DT, order_space, order_time, verbose)
+        if not transpose:
+            strain_dset[time_offset:time_offset + (jchunk + 1) * decim_blk_time_size, :] = strain[0:(jchunk + 1) * block_time_size:tdecim, :]
+
+        else:
+            for j, jj in enumerate(range(0, output_space_size, ddecim)):
+                dset = strain_dset[j]
+                dset[time_offset:time_offset + (jchunk + 1) * decim_blk_time_size] = strain[jj, 0:(jchunk + 1) * block_time_size:tdecim]
+
+    #
+    # update header values with value from raw2str
+    #
+    header_grp.attrs[&#39;gauge_length&#39;] = GL
+    header_grp.attrs[&#39;derivation_time&#39;] = DT
+
+    a1.close()
+    start = timer()
+    fout.close()
+    end = timer()
+    if verbose &gt;= 1:
+        print(&#39;elapsed time when closing:&#39;, end - start)</code></pre>
+</details>
+</dd>
+<dt id="a1das.reduction.reduction_notranspose"><code class="name flex">
+<span>def <span class="ident">reduction_notranspose</span></span>(<span>filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpcorner=None, kchunk=10, skip=True, verbose=0, filterOMP=True, compression=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="description">Description</h2>
+<p>Read a DAS section from an hdf5 Febus-Optics format, extract the requested part or all of it,
+perform an optional highpass filter in the space domain and remove data redundancy</p>
+<p>!!! Time decimation is performed without any lowpass filtering !!!</p>
+<p>After reduction, the records are stored in a single 2D array (time x space) where space = fast axis</p>
+<h2 id="input">Input</h2>
+<pre><code>filein, fileout: hdf5 (.h5) file to read/write
+trange:  (tuple, list) time range in sec (start,end), (default = None, everything is read)
+drange:  (tuple, list) distance range in meter (not km) (start,end), (default = None, everything is read)
+ddecim:  (int) distance decimation factor (default=1)
+tdecim:  (int) time decimation factor (default=1)
+hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)
+kchunk:  (int) the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+skip:    (bool) skip redundant block when reading data (default=true)
+verbose: (int) be verbose (default=0, minimum message level)
+filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)
+compression: (bool) use compression in H5 files (default True)
+</code></pre>
+<h2 id="reading-non-transposed-reducted-output-file">Reading non transposed reducted output file</h2>
+<p>With python using A1File.read(filename,format='reducted')
+or as following example:</p>
+<pre><code>&gt;&gt;&gt;import h5py
+&gt;&gt;&gt;f=h5py.File(filename)
+&gt;&gt;&gt;header=f['header'].attrs   # header dictionnary
+&gt;&gt;&gt;print(header.keys()   )    # list of metadata
+&gt;&gt;&gt;dist=f['distance']         # distance vector
+&gt;&gt;&gt;time=f['time']             # time vector
+&gt;&gt;&gt;data=f['strain']           # 2D strain[-rate] ndarray [ntime x nspace](float64)
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reduction_notranspose(filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpcorner=None, kchunk=10,
+                          skip=True, verbose=0, filterOMP=True, compression=True):
+    &#34;&#34;&#34;
+    ##Description
+    Read a DAS section from an hdf5 Febus-Optics format, extract the requested part or all of it,
+    perform an optional highpass filter in the space domain and remove data redundancy
+
+    !!! Time decimation is performed without any lowpass filtering !!!
+
+    After reduction, the records are stored in a single 2D array (time x space) where space = fast axis
+
+    ##Input
+        filein, fileout: hdf5 (.h5) file to read/write
+        trange:  (tuple, list) time range in sec (start,end), (default = None, everything is read)
+        drange:  (tuple, list) distance range in meter (not km) (start,end), (default = None, everything is read)
+        ddecim:  (int) distance decimation factor (default=1)
+        tdecim:  (int) time decimation factor (default=1)
+        hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)
+        kchunk:  (int) the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+        skip:    (bool) skip redundant block when reading data (default=true)
+        verbose: (int) be verbose (default=0, minimum message level)
+        filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)
+        compression: (bool) use compression in H5 files (default True)
+
+    ##Reading non transposed reducted output file
+    With python using A1File.read(filename,format=&#39;reducted&#39;)
+    or as following example:
+
+        &gt;&gt;&gt;import h5py
+        &gt;&gt;&gt;f=h5py.File(filename)
+        &gt;&gt;&gt;header=f[&#39;header&#39;].attrs   # header dictionnary
+        &gt;&gt;&gt;print(header.keys()   )    # list of metadata
+        &gt;&gt;&gt;dist=f[&#39;distance&#39;]         # distance vector
+        &gt;&gt;&gt;time=f[&#39;time&#39;]             # time vector
+        &gt;&gt;&gt;data=f[&#39;strain&#39;]           # 2D strain[-rate] ndarray [ntime x nspace](float64)
+
+    &#34;&#34;&#34;
+
+    import h5py
+    from .core import open
+    from scipy import signal
+    if filterOMP:
+        try:
+            from a1das import _sosfilterPy
+        except:
+            print(&#39;could not import sosfilter binary module, switching to scipy&#39;)
+            filterOMP=False
+
+    #
+    #  --------------------------- open file for reading
+    #
+    a1 = open(filein, format=&#39;febus&#39;)
+    #
+    #  --------------------------- open file for writing
+    #
+    fout = h5py.File(fileout,&#39;w&#39;)
+
+
+    #
+    #  --------------------------- read header ----------------------
+    #
+    hd = a1.file_header
+    dhd = a1.data_header
+    if hd.srate_node == None:
+        print(&#39;Cannot reduce raw data, only strain(rate)&#39;)
+        exit(-1)
+
+    #
+    #  --------------------------- block time size
+    #  we read the full block and skip redundant blocks
+    #  or read half of it and read all blocks
+    if skip:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;])
+    else:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;] / 2)
+
+    #
+    # check whether time decimation factor is ok or not, it must divide
+    # the chunk size
+    #
+    if (block_time_size) % tdecim != 0:
+        print(&#39;Error: time decimation factor must be a divider of the chunk size =&#39;,block_time_size)
+        print(&#39;try :&#39;)
+        for i in range(2,100):
+            if (block_time_size) % i == 0:
+                print(&#39;  tdecim=&#39;,i)
+        exit(0)
+
+    #
+    #   --------------------------- compute time bounds and time vector -----------------
+    #
+
+    # indices for chunk (block) of data
+    # indices for first and last time record in the first and last block
+    # Vector of times in range[from_time, to_time] with tdecim
+    first_block, last_block, step_block, \
+    time_out, block_indices = a1._get_time_bounds(trange=trange, skip=skip, tdecim=tdecim, align_on_block=True)
+
+    #
+    #     ---------------------------  compute distance bounds and indices ----------------
+    #
+    dist_out, dist_ix, dist_in = a1._get_space_bounds(drange, ddecim)
+
+    #
+    # ---------------------------   print summary  -------------------
+    #
+    print(&#39; &#39;)
+    print(&#39;&gt; Data extraction from [&#39;, time_out[0], &#39; - &#39;, time_out[-1], &#39;] sec and from [&#39;, dist_out[0], &#39; - &#39;,
+          dist_out[-1], &#39;] m&#39;)
+    print(&#39;&gt; sampling rate are :&#39;,dhd[&#39;dt&#39;],&#39; sec and &#39;,dhd[&#39;dx&#39;],&#39; m&#39;)
+
+    #
+    # --------------------------- size of data to be written ---------------------------
+    #
+    output_time_size = len(time_out)  # number of time samples with decimation tdecim
+    output_space_size = len(dist_out) # number of space samples with decimation ddecim
+    input_space_size = len(dist_in)  # number of space samples without decimation
+    #input_time_size = block_time_size
+    #
+    # ---------------------------- compute optional filter coeffcient
+    #
+    if hpcorner:
+        k_nyquist = np.pi/dhd[&#39;dx&#39;]
+        k_corner = 2*np.pi/hpcorner
+        sos = signal.butter(3, k_corner / k_nyquist, &#39;highpass&#39;, output=&#39;sos&#39;)
+
+    #
+    #   --------------------------- write header dataset structure on output file
+    #   Create a single dataset for all records, stored with a chunk size
+    #   approximately equal to : kchunk * original_chunk_size
+    #
+    # Each block contains decim_block_time_size time samples
+    # we will write decim_block_time_size * tdecim * kchunk time sample per chunk
+    # A chunk is filled when ncblocks are read
+    decim_blk_time_size = int(block_time_size/tdecim)
+    decim_blk_space_size = output_space_size
+
+    out_chunk_space_size = decim_blk_space_size
+    out_chunk_time_size = int(block_time_size * kchunk)
+    if out_chunk_time_size &gt; output_time_size:
+        out_chunk_time_size = output_time_size
+        kchunk = int(out_chunk_time_size / block_time_size) + 1
+    ncblock = kchunk * tdecim
+    tmp_buff_time_size = block_time_size * ncblock
+
+    print(&#39;A block is a HDF5 chunk of data&#39;)
+    print(&#39;Original block has &#39;, block_time_size * input_space_size, &#39; (time x space) values&#39;)
+    print(&#39;Decimed block has &#39;, decim_blk_time_size * output_space_size, &#39; (time x space) values&#39;)
+    print(&#39;Original time block size is &#39;, block_time_size, &#39; values&#39;)
+    print(&#39;Decimed time block size is &#39;, decim_blk_time_size, &#39; values&#39;)
+    print(&#39;total time size is &#39;,output_time_size, &#39; values&#39;)
+    print(&#39;Output block time size is &#39;, out_chunk_time_size, &#39; values&#39;)
+    print(&#39;       corresponding to &#39;, ncblock, &#39; original blocks&#39;)
+    print(&#39;Output block has &#39;,out_chunk_time_size * output_space_size, &#39; (time x space) values&#39;)
+
+    #
+    # create groupe &#39;/header&#39; and fill it
+    #
+    header_grp = fout.create_group(&#39;header&#39;)
+    header_grp.attrs[&#39;file_type&#39;]=&#39;reducted_format&#39;
+    header_grp.attrs[&#39;version&#39;]=__version_reducted_format__
+    header_grp.attrs[&#39;transposition&#39;]= 0
+    header_grp.attrs[&#39;data_type&#39;]=&#39;strainrate&#39;
+    header_grp.attrs[&#39;gauge_length&#39;]=dhd[&#39;gauge_length&#39;]
+    header_grp.attrs[&#39;prf&#39;]=dhd[&#39;prf&#39;]
+    header_grp.attrs[&#39;sampling_res&#39;]=dhd[&#39;sampling_res&#39;]
+    header_grp.attrs[&#39;derivation_time&#39;]=dhd[&#39;derivation_time&#39;]
+    header_grp.attrs[&#39;dx&#39;]=dhd[&#39;dx&#39;]*ddecim
+    header_grp.attrs[&#39;nspace&#39;]=output_space_size
+    header_grp.attrs[&#39;ospace&#39;]=dhd[&#39;ospace&#39;]
+    header_grp.attrs[&#39;dt&#39;]=dhd[&#39;dt&#39;]*tdecim
+    header_grp.attrs[&#39;ntime&#39;]=output_time_size
+    header_grp.attrs[&#39;otime&#39;]=dhd[&#39;otime&#39;]
+
+    # create dataset that contains time vector
+    fout.create_dataset(&#39;time&#39;,data=time_out,dtype=&#39;f8&#39;)
+
+
+    # create dataset that contains distance vector
+    fout.create_dataset(&#39;distance&#39;,data=dist_out,dtype=&#39;f8&#39;)
+
+
+    # create dataset that contains decimated traces
+    records = _create_h5_group_not_transposed(fout, output_space_size, output_time_size,
+                                             out_chunk_time_size, out_chunk_space_size, compression)
+
+
+    #
+    # --------------------------- loop reading blocks ----------------------
+    #
+    # buff_in contain a full chunk of input data (no decimation)
+    chunk_in  = np.empty((block_time_size, input_space_size), np.float32, &#39;C&#39;)
+    buff_1    = np.empty((tmp_buff_time_size, output_space_size), np.float32, &#39;C&#39;)
+    time_offset=0
+    last_block_read = list(range(first_block, last_block, step_block))[-1]
+    for i, block in enumerate(range(first_block, last_block, step_block)):
+        if verbose &gt;= 1:
+            print(&#39;    &#39; + str(block - first_block + 1) + &#39;/&#39; + str(last_block - first_block) + &#39; blocks&#39;, end=&#39;\r&#39;)
+
+        # set block indices to read
+        if block == first_block:
+            block_start = block_indices[0][0]
+            block_end = block_indices[0][1]
+        elif block == last_block_read:
+            block_start = block_indices[2][0]
+            block_end = block_indices[2][1]
+        else:
+            block_start = block_indices[1][0]
+            block_end = block_indices[1][1]
+
+        # copy current block data into buffer
+        chunk_in[:,:] = hd.srate_node[block, block_start:block_end, :]
+
+        # highpass space filter if requested
+        if hpcorner:
+            # replace NaN by 0
+            chunk_in[np.where(np.isnan(chunk_in))] = 0.
+            if filterOMP:
+                # openMP sosfilter version
+                chunk_in[:, :] = _sosfilterPy.sosfiltfilt_s(sos, chunk_in[:, :])
+            else:
+                # scipy sequential filter
+                chunk_in[:, :] = signal.sosfiltfilt(sos, chunk_in[:, :], axis=1)
+
+
+        # Fill output buffer; when it&#39;s full, write datasets
+        jchunk = i % ncblock
+        # copy in buff_1 decimated space samples and all time samples
+        buff_1[jchunk * block_time_size:(jchunk + 1) * block_time_size, :] = chunk_in[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        if jchunk == ncblock - 1:
+            # write it in all spatial dataset and decimate here for time decimation
+            buff_2 = np.squeeze(buff_1[0:tmp_buff_time_size:tdecim, :])
+            records[time_offset:time_offset + out_chunk_time_size, :] = buff_2
+            time_offset += out_chunk_time_size
+
+    # end of file reached, write partially filled buffer
+    if jchunk != ncblock - 1:
+        buff_2 = np.squeeze(buff_1[0:(jchunk + 1) * block_time_size:tdecim, :])
+        records[time_offset:time_offset + (jchunk+1)*decim_blk_time_size, :] = buff_2
+
+    a1.close()
+    fout.close()</code></pre>
+</details>
+</dd>
+<dt id="a1das.reduction.reduction_transpose"><code class="name flex">
+<span>def <span class="ident">reduction_transpose</span></span>(<span>filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpcorner=None, kchunk=10, skip=True, verbose=0, filterOMP=True, no_aliasing=True, compression=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="description">Description</h2>
+<p>Read a DAS section from an hdf5 Febus-Optics format, extract the requested part or all of it,
+perform a transposition of the section, an optional highpass filter in the space domain</p>
+<p>!!! Time decimation is performed with lowpass filtering if requested !!!</p>
+<p>After reduction, the individual trace can be accessed directly through direct hdf5 requests</p>
+<h2 id="input">Input</h2>
+<pre><code>filein, fileout: hdf5 (.h5) file to read/write
+trange:  (tuple, list) time range in sec (start,end), (default = None, everything is read)
+drange:  (tuple, list) distance range in meter (not km) (start,end), (default = None, everything is read)
+ddecim:  (int) distance decimation factor (default=1)
+tdecim:  (int) time decimation factor (default=1)
+hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)
+kchunk:  (int) the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+skip:    (bool) skip redundant block when reading data (default=true) !!!! READ Doc
+verbose: (int) be verbose (default=0, minimum message level)
+filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)
+no_aliasing: (bool) if tdecim &gt;1, apply a Low pass filter at 0.9 F_nyquist (default True)
+compression: (bool) compress data in H5 files
+</code></pre>
+<h2 id="reading-transposed-reducted-output-file">Reading transposed reducted output file</h2>
+<p>With python using A1File.read(filename,format='reducted')
+or as following example:</p>
+<pre><code>&gt;&gt;&gt;import h5py
+&gt;&gt;&gt;f=h5py.File(filename)
+&gt;&gt;&gt;header=f['header'].attrs   # header dictionnary
+&gt;&gt;&gt;print(header.keys()   )    # list of metadata
+&gt;&gt;&gt;dist=f['distance']         # distance vector
+&gt;&gt;&gt;time=f['time']             # time vector
+&gt;&gt;&gt;# Two ways to read all or individual traces
+&gt;&gt;&gt;# read trace number 9
+&gt;&gt;&gt;trace9 = f['/Traces/9'][:]
+&gt;&gt;&gt;# read the full section
+&gt;&gt;&gt;# vsection is a virtual HDF5 2D array
+&gt;&gt;&gt;section=f['/vsection'][:,:]  #2D ndarray [nspace x ntime] (float64)
+&gt;&gt;&gt;# read only the first 10 traces
+&gt;&gt;&gt;section=f['/vsection'][0:10,:]
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def reduction_transpose(filein, fileout, trange=None, drange=None, tdecim=1, ddecim=1, hpcorner=None, kchunk=10, skip=True, verbose=0, filterOMP=True, no_aliasing=True, compression=True):
+    &#39;&#39;&#39;
+    ##Description
+    Read a DAS section from an hdf5 Febus-Optics format, extract the requested part or all of it,
+    perform a transposition of the section, an optional highpass filter in the space domain
+
+    !!! Time decimation is performed with lowpass filtering if requested !!!
+
+    After reduction, the individual trace can be accessed directly through direct hdf5 requests
+
+    ##Input
+        filein, fileout: hdf5 (.h5) file to read/write
+        trange:  (tuple, list) time range in sec (start,end), (default = None, everything is read)
+        drange:  (tuple, list) distance range in meter (not km) (start,end), (default = None, everything is read)
+        ddecim:  (int) distance decimation factor (default=1)
+        tdecim:  (int) time decimation factor (default=1)
+        hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)
+        kchunk:  (int) the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
+        skip:    (bool) skip redundant block when reading data (default=true) !!!! READ Doc
+        verbose: (int) be verbose (default=0, minimum message level)
+        filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)
+        no_aliasing: (bool) if tdecim &gt;1, apply a Low pass filter at 0.9 F_nyquist (default True)
+        compression: (bool) compress data in H5 files
+
+
+    ##Reading transposed reducted output file
+    With python using A1File.read(filename,format=&#39;reducted&#39;)
+    or as following example:
+
+        &gt;&gt;&gt;import h5py
+        &gt;&gt;&gt;f=h5py.File(filename)
+        &gt;&gt;&gt;header=f[&#39;header&#39;].attrs   # header dictionnary
+        &gt;&gt;&gt;print(header.keys()   )    # list of metadata
+        &gt;&gt;&gt;dist=f[&#39;distance&#39;]         # distance vector
+        &gt;&gt;&gt;time=f[&#39;time&#39;]             # time vector
+        &gt;&gt;&gt;# Two ways to read all or individual traces
+        &gt;&gt;&gt;# read trace number 9
+        &gt;&gt;&gt;trace9 = f[&#39;/Traces/9&#39;][:]
+        &gt;&gt;&gt;# read the full section
+        &gt;&gt;&gt;# vsection is a virtual HDF5 2D array
+        &gt;&gt;&gt;section=f[&#39;/vsection&#39;][:,:]  #2D ndarray [nspace x ntime] (float64)
+        &gt;&gt;&gt;# read only the first 10 traces
+        &gt;&gt;&gt;section=f[&#39;/vsection&#39;][0:10,:]
+
+    &#39;&#39;&#39;
+    import h5py
+
+    from scipy import signal
+    if filterOMP:
+        try:
+            from a1das import _sosfilterPy
+        except:
+            print(&#39;could not import sosfilter binary module, switching to scipy&#39;)
+            filterOMP=False
+    from .core import open
+
+    #
+    #  --------------------------- open file for reading
+    #
+    a1 = open(filein, format=&#39;febus&#39;)
+    #
+    #  --------------------------- open file for writing
+    #
+    fout = h5py.File(fileout,&#39;w&#39;)
+
+
+    #
+    #  --------------------------- read header ----------------------
+    #
+    hd = a1.file_header
+    dhd = a1.data_header
+    if hd.srate_node == None:
+        print(&#39;Cannot reduce raw data, only strain(rate)&#39;)
+        exit(-1)
+    #
+    #  --------------------------- block time size
+    #  we read the full block and skip redundant blocks
+    #  or read half of it and read all blocks
+    if skip:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;])
+    else:
+        block_time_size = int(hd.block_info[&#39;time_size&#39;] / 2)
+    #
+    # check whether time decimation factor is ok or not, it must divide
+    # the chunk size
+    #
+    if (block_time_size) % tdecim != 0:
+        print(&#39;Error: time decimation factor must be a divider of the chunk size =&#39;,block_time_size)
+        print(&#39;try :&#39;)
+        for i in range(2,100):
+            if (block_time_size) % i == 0:
+                print(&#39;  tdecim=&#39;,i)
+        exit(0)
+
+    #
+    #   --------------------------- compute time bounds and time vector -----------------
+    #
+
+    # indices for chunk (block) of data
+    # indices for first and last time record in the first and last block
+    # Vector of times in range[from_time, to_time] with tdecim
+    first_block, last_block, step_block, \
+    time_out, block_indices = a1._get_time_bounds(trange=trange, skip=skip, tdecim=tdecim, align_on_block=True)
+
+    #
+    #     ---------------------------  compute distance bounds and indices ----------------
+    #
+    dist_out, dist_ix, dist_in = a1._get_space_bounds(drange, ddecim)
+
+    #
+    # ---------------------------   print summary  -------------------
+    #
+    print(&#39; &#39;)
+    print(&#39;&gt; Data extraction from [&#39;, time_out[0], &#39; - &#39;, time_out[-1], &#39;] sec and from [&#39;, dist_out[0], &#39; - &#39;,
+          dist_out[-1], &#39;] m&#39;)
+    print(&#39;&gt; sampling rate are :&#39;,dhd[&#39;dt&#39;],&#39; sec and &#39;,dhd[&#39;dx&#39;],&#39; m&#39;)
+
+    #
+    # --------------------------- size of data to be written ---------------------------
+    #
+    output_time_size = len(time_out)
+    output_space_size = len(dist_out)
+    input_space_size = len(dist_in)
+
+    #
+    # ---------------------------- compute optional filter coefficients
+    #
+    # In space
+    if hpcorner:
+        k_nyquist = np.pi/dhd[&#39;dx&#39;]
+        k_corner = 2*np.pi/hpcorner
+        sos = signal.butter(3, k_corner / k_nyquist, &#39;highpass&#39;, output=&#39;sos&#39;)
+        #scipy.io.savemat(&#39;sos.mat&#39;, mdict={&#39;sos&#39;: sos})
+    # In time
+    if tdecim &gt;1:
+        f_nyquist  = 1./dhd[&#39;dt&#39;] / 2.
+        f_corner  = 0.7 * f_nyquist / tdecim
+        sos_time = signal.butter(6, f_corner / f_nyquist, &#39;lowpass&#39;, output=&#39;sos&#39;)
+
+    #
+    #   --------------------------- write header dataset structure on output file
+    #   Create one dataset per distance
+    #
+    # Each output block contains decim_blk_time_size time samples
+    # we will write decim_blk_time_size * tdecim * kchunk time sample per output chunk
+    # A chunk is filled when ncblock are read
+    decim_blk_time_size = int(block_time_size/tdecim)
+
+    out_chunk_time_size = block_time_size * kchunk
+    if out_chunk_time_size &gt; output_time_size:
+        out_chunk_time_size = output_time_size
+        kchunk = int(out_chunk_time_size / block_time_size)+1
+    ncblock = kchunk * tdecim
+    tmp_buff_time_size = block_time_size * ncblock
+
+    print(&#39;A block is a HDF5 chunk of data&#39;)
+    print(&#39;Original block has &#39;, block_time_size * input_space_size, &#39; (time x space) values&#39;)
+    print(&#39;Original block time size is &#39;, block_time_size, &#39; values&#39;)
+    print(&#39;Decimed block time size is &#39;, decim_blk_time_size, &#39; values&#39;)
+    print(&#39;total time size is &#39;,output_time_size, &#39; values&#39;)
+    print(&#39;Output block time-size is &#39;,out_chunk_time_size,&#39; values&#39;)
+    print(&#39;       corresponding to &#39;, ncblock, &#39; original time blocks&#39;)
+
+    #
+    # create groupe &#39;/header&#39; and fill it
+    #
+    header_grp = fout.create_group(&#39;header&#39;)
+    header_grp.attrs[&#39;file_type&#39;]=&#39;reducted_format&#39;
+    header_grp.attrs[&#39;version&#39;]=__version_reducted_format__
+    header_grp.attrs[&#39;transposition&#39;]= 1
+    header_grp.attrs[&#39;data_type&#39;]=&#39;strainrate&#39;
+    header_grp.attrs[&#39;gauge_length&#39;]=dhd[&#39;gauge_length&#39;]
+    header_grp.attrs[&#39;prf&#39;]=dhd[&#39;prf&#39;]
+    header_grp.attrs[&#39;sampling_res&#39;]=dhd[&#39;sampling_res&#39;]
+    header_grp.attrs[&#39;derivation_time&#39;]=dhd[&#39;derivation_time&#39;]
+    header_grp.attrs[&#39;dx&#39;]=dhd[&#39;dx&#39;]*ddecim
+    header_grp.attrs[&#39;nspace&#39;]=output_space_size
+    header_grp.attrs[&#39;ospace&#39;]=dhd[&#39;ospace&#39;]
+    header_grp.attrs[&#39;dt&#39;]=dhd[&#39;dt&#39;]*tdecim
+    header_grp.attrs[&#39;ntime&#39;]=output_time_size
+    header_grp.attrs[&#39;otime&#39;]=dhd[&#39;otime&#39;]
+
+    #
+    # create dataset that contains time vector
+    #
+    fout.create_dataset(&#39;time&#39;,data=time_out,dtype=&#39;f8&#39;)
+
+    #
+    # create dataset that contains distance vector
+    #
+    fout.create_dataset(&#39;distance&#39;,data=dist_out,dtype=&#39;f8&#39;)
+
+    #
+    # create group &#39;/Traces&#39;
+    #
+    section_list = _create_h5_group_transposed(fout, fileout, output_space_size, output_time_size, out_chunk_time_size,
+                                               compression=compression)
+
+    #
+    # --------------------------- loop reading blocks ----------------------
+    #
+    # buff_in  = np.empty((block_time_size, input_space_size), np.float32, &#39;C&#39;)
+    buff_out = np.empty((input_space_size, out_chunk_time_size), np.float32, &#39;C&#39;)
+    time_offset = 0
+    last_block_read = list(range(first_block, last_block, step_block))[-1]
+    for i, block in enumerate(range(first_block, last_block, step_block)):
+        if verbose &gt;= 1:
+            print(&#39;    &#39; + str(block - first_block + 1) + &#39;/&#39; + str(last_block - first_block) + &#39; blocks&#39;, end =&#39;\r&#39;)
+
+        # set block indices to read
+        if block == first_block:
+            block_start = block_indices[0][0]
+            block_end = block_indices[0][1]
+        elif block == last_block_read:
+            block_start = block_indices[2][0]
+            block_end = block_indices[2][1]
+        else:
+            block_start = block_indices[1][0]
+            block_end = block_indices[1][1]
+
+        # copy current block data into buffer
+        #buff_in[:, :] = hd.srate_node[block, block_start:block_end, :]
+        buff_in = hd.srate_node[block, : , :]
+
+        # highpass space filter if requested
+        if hpcorner:
+            # replace NaN by 0
+            #buff_in[np.where(np.isnan(buff_in))] = 0.
+            buff_in[np.where(np.isnan(buff_tmp))] = 0.
+            #buff_in = np.nan_to_num(buff_in)
+            if filterOMP:
+                # openMP sosfilter version
+                #buff_in[:, :] = _sosfilterPy.sosfiltfilt(sos, buff_in[:, :])
+                buff_in = _sosfilterPy.sosfiltfilt_s(sos, buff_in, block_start, block_end, 1)
+            else:
+                # scipy sequential filter
+                #buff_in[:, :] = signal.sosfiltfilt(sos, buff_in[:, :], axis=1)
+                buff_in[block_start:block_end, :] = signal.sosfiltfilt(sos, buff_in[block_start:block_end, :], axis=1)
+
+
+        # transpose data, copy is necessayr to make sure
+        # that the array is transposed in memeory
+        #buff_trans = np.transpose(buff_in)
+        buff_trans = np.transpose(buff_in).copy()
+
+        # increment output buffer block counter
+        jchunk = i % ncblock
+
+        if (tdecim&gt;1 and no_aliasing):
+            if filterOMP:
+                #print(sos_time.shape,buff_trans.shape,sos_time.dtype,buff_trans.dtype)
+                buff_trans = _sosfilterPy.sosfiltfilt_s(sos_time, buff_trans, 0, output_space_size, ddecim)
+            else:
+                buff_trans[0:output_space_size:ddecim, :] = \
+                    signal.sosfiltfilt(sos_time, buff_trans[0:output_space_size:ddecim, :], axis=1)
+            #alternative
+            #buff_trans[0:output_space_size:ddecim, :] = cusignal.filtering.resample.decimate(buff_trans[0:output_space_size:ddecim, :],tdecim,axis=1)
+        # Fill output buffer and perform time decimation
+        #buff_out[:, jchunk * decim_blk_time_size:(jchunk+1)*decim_blk_time_size] = buff_trans[:, 0:block_time_size:tdecim]
+        buff_out[:, jchunk * decim_blk_time_size:(jchunk + 1) * decim_blk_time_size] = \
+                 buff_trans[:,0:block_time_size:tdecim]
+
+        # when buffer is full , write datasets
+        if jchunk == ncblock - 1:
+            # output buffer is filled with ncblock time block
+            # write it in all spatial dataset
+            for j, jj in enumerate(range(0,output_space_size,ddecim)):
+                dset = section_list[j]
+                dset[time_offset:time_offset + out_chunk_time_size] = buff_out[jj, :]
+            time_offset += out_chunk_time_size
+
+    # end of file reached, write partially filled buffer
+    if jchunk != ncblock - 1:
+        for j,jj in enumerate(range(0,output_space_size,ddecim)):
+            dset = section_list[j]
+            dset[time_offset:time_offset + (jchunk+1)*decim_blk_time_size] = buff_out[jj, 0:(jchunk+1)*decim_blk_time_size]
+
+    a1.close()
+    fout.close()</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="a1das" href="index.html">a1das</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="a1das.reduction.raw2strain" href="#a1das.reduction.raw2strain">raw2strain</a></code></li>
+<li><code><a title="a1das.reduction.reduction_notranspose" href="#a1das.reduction.reduction_notranspose">reduction_notranspose</a></code></li>
+<li><code><a title="a1das.reduction.reduction_transpose" href="#a1das.reduction.reduction_transpose">reduction_transpose</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,39 @@
+Set of utility functions to process FEBUS Optics A1 DAS data.
+These codes are developped by DAS data end-users, not by FEBUS Optics.
+FEBUS Optics has no responsability in the development nor in the distribution of these codes.
+
+These codes come as python sources or binary modules
+
+A html documentation is available into "documentation" directory
+
+This package uses Febus format files (RAW, Strain, Strain rate) and a reducted file format both in a unified way.
+The reducted format is not intented for data distribution but for convenient and fast IO. It uses HDF5 container
+with a header metadata part and binary data.
+
+The set of functions is divided into:
+====================================
+
+packages in the a1das directory:
+-------------------------------
+
+CORE: IO functions to open, read, write and various utilities (set origin time, convert to obspy stream, etc)
+      usage:
+      >> import a1das
+
+REDUCTION: 
+ - functions to reduce data (ie remove redundancy, decimate in space and/or time, select distance/time ranges, transpose space versus time)
+ - function to convert raw to strain[rate]
+      >> help(a1das.reduction)
+
+XCOR: functions to compute cross-correlation optimized with openMP and MKL
+      >> help(a1das.xcorr)
+
+VSERVER: functions to emulate the DAS interrogator real time data stream. This allows to process files and play movies on the results
+      >> help(a1das.vserver)
+
+functions in other directories:
+------------------------------
+
+test: functions to test and show some examples
+
+example: more sophisticated examples

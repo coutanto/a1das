@@ -905,7 +905,7 @@ def raw2strain(filein, fileout, GL, DT, order_time=2, order_space=2, trange=None
     # Vector of times in range[from_time, to_time] with tdecim
     # (block, trange, skip, align_on_block, tdecim)
     first_block, last_block, step_block, \
-    time_out, block_indices = a1._get_time_bounds(trange=trange, skip=skip)
+    time_out, block_indices = a1._get_time_bounds(trange=trange, skip=skip, align_on_block=True)
 
 
     #

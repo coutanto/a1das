@@ -1,0 +1,5 @@
+PYTHON_INC =  /home/dnziengui/.conda/envs/das/include/python3.7m
+SUFFIX =  cpython-37m-x86_64-linux-gnu.so
+NUMPY_INC =  /home/dnziengui/.conda/envs/das/lib/python3.7/site-packages/numpy/core/include
+    F2PY_SRC = '/home/dnziengui/.conda/envs/das/lib/python3.7/site-packages/numpy/f2py/src/fortranobject.c'
+    F2PY_INC = '/home/dnziengui/.conda/envs/das/lib/python3.7/site-packages/numpy/f2py/src'

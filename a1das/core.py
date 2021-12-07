@@ -354,12 +354,11 @@ class A1File:
             drange = (list), in meter, drange=[start_position, end_position], select distance from start_position
                 to end_position
                 default = None
-            ddecim = decimation along spatial dimension, (must be a divider of chunck/block size)
-
             skip = read all blocks/chunck of data (False) or one over 2 (True)
                 blocks contains redundant data, skip=True is faster but may yield some errors on block limits
-
             verbose = verbosity level
+            float_type = 'float_32' or 'float_64' float type for data in memory, default is float64
+            tdecim = (int) time decimation, default=None
 
             **kwargs= any optionnal supplementary arguments, see below
 
@@ -372,7 +371,8 @@ class A1File:
             >>> a1 = f.read(trange=(0.,1800.),drange=(100., 900.),skip=False)
 
         ## optionnal arguments
-            float_type = 'float_32' or 'float_64' for febus file only
+        for Febus files:
+             ddecim = decimation along spatial dimension, (must be a divider of chunck/block size)
         """
 
         from ._core_febus_file import read_febus_file
@@ -1207,22 +1207,26 @@ def open(filename, format=None):
     if format == 'febus' or format is None:
         try:
             file_header, data_header = open_febus_file(filename)
+            if format is None:
+                print('open Febus format')
             return A1File(file_header=file_header, data_header=data_header)
         except (KeyError, OSError, AttributeError):
-            print('not in febus format')
             pass
 
     if format == 'reducted' or format is None:
         try:
             file_header, data_header = open_reducted_file(filename)
+            if format is None:
+                print('open reducted format')
             return A1File(file_header=file_header, data_header=data_header)
         except (FileFormatError, OSError):
-            print('not in reducted format')
             pass
 
     if format == 'socket' or format is None:
         try:
             socket_header, data_header = open_das_socket(filename)
+            if format is None:
+                print('open ZMQ socket format')
             return A1File(socket_header=socket_header, data_header =data_header)
         except:
             raise FileFormatError('Cannot open <Febus>, <reducted> or <socket> file format>')

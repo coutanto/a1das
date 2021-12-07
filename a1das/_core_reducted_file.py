@@ -77,19 +77,23 @@ def open_reducted_file(filename):
     return a1fh, a1dh
 #
 # ============================================ READ_REDUCTED_FILE() ============================
-def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='float64'):
+def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='float64',tdecim=None):
 
     """
     Read a file reducted from original febus file
 
     input:
     - f1 = <A1File> class instance
-    - drange = distance range drange=[start, end] in meters, or None
-    - trange = time range trange=[start, end] in sec, or None
+    - drange = (2 elements list or tuple) distance range drange=[start, end] in meters, or None
+    - trange = (2 elements list or tuple) time range trange=[start, end] in sec, or None
     - verbose not use yet
-    - float_type = force type conversion (default=float64)
+    - float_type = (float type) force type conversion (default=float64)
+    - tdecim = (int) time decimation
     """
     from numpy import empty, nanargmin, abs
+    from a1das import _sosfilterPy
+    from scipy import signal
+    from numpy import arange
     from  ._a1das_exception import FileFormatError, WrongValueError
 
     f = f1.file_header.fd
@@ -103,6 +107,7 @@ def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='f
     dist = f1.data_header['dist']
     nspace = f1.data_header['nspace']
     ntime = f1.data_header['ntime']
+    dt = f1['dt'] # or f1.data_header['dt']
 
     # drange
     if drange is None:
@@ -130,21 +135,38 @@ def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='f
     #
     # data have been transposed from original
     #
-    if f1.data_header['data_axis'] == 'space_x_time':
+    if f1['data_axis'] == 'space_x_time':
         #
-        # data transposed from original
+        # data transposed from original Febus
         #
-        section = empty((nspace, ntime), dtype=float_type)
-        for i, ix in enumerate(range(d1,d2)):
-            section[i, :] = f['Traces/'+str(ix)][t1:t2]
+        if tdecim is not None:
+            if tdecim < 0 or tdecim >= ntime / 2:
+                raise WrongValueError('wrong value for time decimation')
+            f_nyquist = 1. / f1['dt'] / 2.
+            f_corner = 0.7 * f_nyquist / tdecim
+            sos = signal.butter(6, f_corner / f_nyquist, 'lowpass', output='sos')
+            ntime = len(arange(t1,t2,tdecim))
+            tmp = empty((nspace, t2-t1), dtype=float_type)
+            section = empty((nspace, ntime), dtype=float_type)
+            for i, ix in enumerate(range(d1, d2)):
+                tmp = f['Traces/' + str(ix)][t1:t2]
+                section[i, :] = signal.sosfiltfilt(sos, tmp)[t1:t2:tdecim]
+        else:
+            section = empty((nspace, ntime), dtype=float_type)
+            for i, ix in enumerate(range(d1,d2)):
+                section[i, :] = f['Traces/'+str(ix)][t1:t2]
+            tdecim=1
 
         #
         # data have not been transposed from original
         #
     else:
+        if tdecim is not None:
+            raise WrongValueError('cannot apply time decimation on section of dimension <time_x_space> ie not transposed')
         if f1.data_header['data_axis'] != 'time_x_space':
-            raise WrongValueError('data_axis in data head er is neither <space_x_time> nor <time_x_space>')
+            raise WrongValueError('data_axis in data header is neither <space_x_time> nor <time_x_space>')
         section = f['strain'][t1:t2,d1:d2].astype(float_type)
+        tdecim=1
 
     # initialize data_header
     data_header = f1.data_header.copy()
@@ -152,7 +174,9 @@ def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='f
     data_header.set_item(nspace= nspace)
     data_header.set_item(ntime = ntime)
     data_header.set_item(dist = dist[d1:d2])
-    data_header.set_item(time = time[t1:t2])
+    data_header.set_item(time = time[t1:t2:tdecim])
+    data_header.set_item(dt = dt*tdecim)
+
 
     return data_header, section
 

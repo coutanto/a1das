@@ -67,7 +67,10 @@ def open_febus_file(filename):
 
     # DAS_name = DASName
     prf = SrcAttr['PulseRateFreq'] / 1000.
-    freq_res = float(SrcAttr['FreqRes'] / 1000.)  # A chunk(block) of data is written @ (Freq_res/1000) Hz
+    try:
+        freq_res = float(SrcAttr['FreqRes'] / 1000.)  # A chunk(block) of data is written @ (Freq_res/1000) Hz
+    except:
+        freq_res = float(SrcAttr['BlockRate'] / 1000.)  # A chunk(block) of data is written @ (BlockRate/1000) Hz
     # Acquisition_length = SrcAttr['FiberLength']
     sampling_res = float(SrcAttr['SamplingRes'])
 

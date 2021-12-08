@@ -159,8 +159,8 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
     else:
         tmin=trange[0]
         tmax=trange[1]
-        t1=np.nanargmin(np.abs(time-tmin))
-        t2=np.nanargmin(np.abs(time-tmax))
+        t1=np.nanargmin(np.abs(time-tmin - a1['otime']))
+        t2=np.nanargmin(np.abs(time-tmax - a1['otime']))
 
     #from_distance = a1.dist[0]
     #to_distance = a1.dist[-1]

@@ -652,7 +652,7 @@ class A1File:
                     i_1 = int(dt_1 / dT)
                     # ending time in the last block of the first point
                     dt_last = to_time - (last_block - 1) * bts2 * dT
-                    i_last = int(dt_last / dT)
+                    i_last = int(dt_last / dT) + 1 #modifOC
                     if nb_block > 1:
                         time_indices = [[i_1, bts], [0, bts], [0, i_last]]
                     else:

@@ -270,7 +270,6 @@ end subroutine
 !
 
 subroutine sosfilt_s(sos,sig,j1,j2,jj,order,ncof,nt,ns)
-   use, intrinsic :: ieee_arithmetic
    implicit none
    integer, intent(in)        :: j1, j2, jj    ! indices for second dimension of sig, 0 based
    integer,intent(in)         :: order         ! filter order

@@ -15,6 +15,7 @@ module cxcor_mod
 !
 implicit none
 
+integer(kind=1),parameter :: one=1, two=2
 !
 ! ================= members =================
 !
@@ -187,9 +188,9 @@ subroutine register_ij(c,i,j, status)
    !                                       10 (=2) correlate (j,i) where j>i
    !                                       11 (=3) correlate (i,j) and (j,i)
    if (i>j) then
-        c%x(k) = or(c%x(k),1)
+        c%x(k) = or(c%x(k),one)
    else
-       c%x(k) = or(c%x(k),2)
+       c%x(k) = or(c%x(k),two)
    end if
    
 end subroutine
@@ -220,9 +221,9 @@ subroutine register_irange(c,i,j,k,status)
    do jj=j,k
        if (c%k(i,jj) == 0) c%nx=c%nx + 1
       if (i>jj) then
-            c%x(c%k(i,jj)) = or(c%x(c%k(i,jj)),1)
+            c%x(c%k(i,jj)) = or(c%x(c%k(i,jj)),one)
       else
-            c%x(c%k(i,jj)) = or(c%x(c%k(i,jj)),2)
+            c%x(c%k(i,jj)) = or(c%x(c%k(i,jj)),two)
       end if
    enddo
 

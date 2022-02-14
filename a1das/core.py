@@ -10,14 +10,13 @@
 # ------------
 #    members = file_header   (class _A1FileHeader)
 #              socket_header (class _A1SocketHeader)
-#              data_header   (dict)
+#              data_header   (class _A1DataHeader)
 #
 #    methods:
 #                __init__()
 #                __str__() (print(A1File)
 #
 #               read()                    : read data with various selection options and return an A1Section instance
-#               set_otime_from_filename() : set origin time from filename
 #               close()                   : close file/socket stream
 #    functions:
 #               open()                    : open and return a file/socket description
@@ -26,251 +25,19 @@
 # class A1Section:
 # ---------------
 #
-#    members =  data_header   (dict)
+#    members =  data_header   (class _A1DataHeader)
 #               data          (numpy 2D ndarray)
 #    methods:
-#               set_otime_from_filename() : set origin time from filename
 #               obspy_stream()            : convert to obspy
 #               time()                    : return time vector
 #               dist()                    : return distance vector
+#               sync()                    : sama as SAC, set time[0] to 0 and shift origin time
 #               plot()                    : simple plot vector
 #               rplot()                   : simple plot ratser
-
-#
-# Content
-#
-# class _A1SocketHeader
-# class _A1FileHeader
-# "class" _A1DataHeader (actually not a class but just a dictionnary)
-#
-# class A1File
-# class A1Section
-# function open()
 #
 __version__ = "a1das Version 2.0.0"
 
 __doc__="Generic IO functions to open/read/plot  febus/reducted/socket das files"
-#
-# ================================= _A1SocketHeader ================================
-#
-class _A1SocketHeader:
-    def __init__(self,  socket=None,  socket_name=None, time_stamp=0., running_time=0.):
-        self.socket = socket
-        self.socketname = socket_name
-        self.time_stamp = time_stamp
-        self.running_time = running_time
-
-    def __str__(self):
-        from io import StringIO
-        s = StringIO()
-        s.write('\n<_A1SocketHeader>:')
-        s.write('\n-----------')
-        s.write('\nsocketname: '+self.socketname)
-        s.write('\nrunning_time:'+str(self.running_time))
-        return s.getvalue()
-
-#
-# ================================= _A1FileHeader ================================
-#
-class _A1FileHeader:
-
-    def __init__(self,  freq_res, block_info, srate_node, chan_node, type, fd, filename):
-        self.freq_res = freq_res    # frequency at which data are written on file
-        self.srate_node = srate_node # hdf5 handle
-        self.chan_node = chan_node   # hdf5 handle
-        self.block_info = block_info # block info dict
-        self.type = type                # 'febus' or 'reducted'
-        self.fd = fd                    # file descriptor
-        self.filename = filename        # as said
-
-    def __str__(self):
-        from io import StringIO
-        s = StringIO()
-        s.write('\n<_A1FileHeader>:')
-        s.write('\n-----------------')
-        s.write('\nfile type: '+self.type)
-        s.write('\nfilename: ' + self.filename)
-        if self.block_info is not None:
-            for key, value in self.block_info.items():
-                s.write('\n'+key+'='+str(value))
-        return s.getvalue()
-
-
-#
-# ================================= class _A1DataHeader ================================
-#
-class _A1DataHeader:
-    def __init__(self, gauge_length=None, sampling_res=None, prf=None, derivation_time=None,
-                    data_type=None, data_axis=None, pos=None, dt=None, ntime=None, otime=None, dx=None, nspace=None,
-                    ospace=None,dist=None, time=None, **kwargs):
-        """
-        fill the _A1DataHeader._header{} dictionnary with values passed as args
-
-        gauge_length h   # gauge length
-        sampling_res     # original spatial resolution
-        derivation_time  # time step for time derivation
-        prf              # pulse rate frequency
-        pos              # 3D array of geographical coordinates
-        data_type        # 'raw', 'strain', 'strain-rate'
-        data_axis        # 'time_x_space' or 'space_x_time'
-        dt               # time step
-        ntime            # number of time samples
-        time             # time vector
-        otime            # origin time
-        dx               # space step along fiber
-        dist             # distance vector along fiber
-        nspace           # number of space samples
-        ospace           # origin position along fiber
-
-        Note: why data_header is not a simple dictionnary?
-        because we want to keep a predefined set of metadata, even if not defined (or None),
-        and do this via the __init__() method that documents it
-        """
-        self._header = {
-            'gauge_length': gauge_length,  # gauge length
-            'sampling_res': sampling_res,  # original spatial resolution
-            'derivation_time': derivation_time,  # time step for time derivation
-            'prf': prf,  # pulse rate frequency
-            'pos': pos,  # 3D array of geographical coordinates
-            'data_type': data_type,  # 'raw', 'strain', 'strain-rate'
-            'data_axis': data_axis,  # 'time_x_space' or 'space_x_time'
-            'dt': dt,  # time step
-            'ntime': ntime,  # number of time samples
-            'otime': otime,  # origin time in Posix format
-            'dx': dx,  # space step along fiber
-            'nspace': nspace,  # number of space samples
-            'ospace': ospace,  # origin position along fiber
-            'time': time,
-            'dist': dist
-        }
-        for key, value in kwargs.items():
-            self._header[key] = value
-
-    def __getitem__(self, item):
-        """
-        overload [] operator for the _A1DataHeader class
-        """
-        try:
-            return self._header[item]
-        except:
-            return None
-
-    def copy(self):
-        """
-        # Description
-        Create and copy a data_header with a 'real' copy of the dictionnary
-        #Description return:
-        a new instance of _A1DataHeader filled with the value of the calling instance
-        """
-        dhdout = _A1DataHeader()
-        dhdout._header = self._header.copy()
-        return dhdout
-
-    def __str__(self):
-
-        from io import StringIO
-        from numpy import ndarray
-        from datetime import datetime, timezone
-
-        unit = {'gauge_length': ' [m]',
-                'sampling_res': ' [cm]',
-                'derivation_time': ' [msec]',
-                'dt': ' [sec]',
-                'dx': ' [m]'
-                }
-
-        s = StringIO()
-        s.write('\n<_A1DataHeader>:')
-        s.write('\n-----------------')
-        for key, value in self._header.items():
-            if value is None:
-                continue
-            if isinstance(value, ndarray):
-                continue
-            try:
-                su = unit[key]
-                s.write('\n' + str(key) + '= ' + str(value) + su)
-            except:
-                s.write('\n' + str(key) + '= ' + str(value))
-
-            if key == 'otime':
-                s.write('  <=> date =' + str(datetime.fromtimestamp(value, tz=timezone.utc)))
-
-        if self._header['time'] is not None:
-            time = self._header['time']
-            s.write('\n\nTotal time duration :' + str(time[-1] - time[0]) + ' [sec]')
-        if self._header['dist'] is not None:
-            dist = self._header['dist']
-            s.write('\nTotal distance :' + str(dist[-1] - dist[0]) + ' [m]')
-
-        return s.getvalue()
-
-    def __repr__(self):
-        return self.__str__()
-
-    def set_item(self, **kwargs):
-        for key, value in kwargs.items():
-            self._header[key]=value
-
-    def keys(self):
-        return self._header.keys()
-    #
-    # ====================================   INDEX()  =======================================
-    #
-    def index(self, drange=None, trange=None):
-        """
-        ## Description
-        Return the index or list of indices that correspond(s) to the list of distance(resp. time) range
-        in the 'distance' vector (resp. time vector)
-
-        ## Input
-        !!!!! Only one of trange or drange can be given
-
-        drange = [unique_dist]; [dist_min, dist_max]; [d1, d2, ... dN]  (default = None)
-
-        trange = [unique_time]; [time_min, time_max]; [t1, t2, ... tN]  (default = None)
-
-        ## Return
-        A list of indices that matches the given range in the A1Section.data_header['dist'] or
-        A1Section.data_header['time'] vectors
-
-        ## Usage example
-        >>> import a1das
-        >>> f=open('filename')
-        >>> a=f.read()
-        >>> dhd = a.data_header
-        >>> dlist1 = dhd.index(drange=[50.])          # single index at distance 50 m
-        >>> dlist2 = dhd.index(drange=[50., 60.])     # 2 indices at 50 and 60m
-        >>> dlist3 = dhd.index(drange=[[dist] for dist in np.arange(50,60.,1.)]) # all indices for distance 50< ..<60 every 1m
-        """
-        from numpy import nanargmin, abs, ndarray
-        from ._a1das_exception import DataTypeError, WrongValueError
-
-        if drange is not None and trange is not None:
-            raise WrongValueError('cannot define trange AND drange, select one of two')
-
-        if drange is not None:
-            dtrange=drange
-            vec = self['dist']
-        else:
-            dtrange=trange
-            vec = self['time']
-
-        if isinstance(dtrange, ndarray):
-            raise DataTypeError('range must be a list or tuple')
-
-        if dtrange is None:
-            return [0, -1]
-
-        d1 = nanargmin(abs(vec - dtrange[0]))
-        indx = [d1]
-        if len(dtrange) == 1:
-            indx.append(d1+1)
-        else:
-            for i in range(1,len(dtrange)):
-                indx.append(nanargmin(abs(vec-dtrange[i])))
-        return indx
-
 
 #
 # ========================================= CLASS A1File ============================
@@ -330,10 +97,28 @@ class A1File:
             return self.data_header._header[item]
         except:
             return None
+
+    def is_transposed(self):
+        """
+        ## Description
+        Only relevant for "reducted" format. Return True if the data are transposed from the original Febus format.
+
+        Transposed =  the data array is stored as data[nspace, ntime],
+
+        Not transposed = the data array is stored as data[ntime, nspace],
+
+        ## Return
+        False for Febus original files, True/False for reducted files according to f['axis?'] header value
+        """
+        if self['axis1'] == 'space':
+            return False
+        else:
+            return True
     #
     # ========================================= READ() ============================
     #
-    def read(self, block=None, trange=None, drange=None, ddecim=1, skip=True, verbose=0, **kwargs):
+    def read(self, block=None, trange=None, drange=None, skip=False, verbose=0, float_type='float64',
+             tdecim=1, ddecim =1):
         """
         ## Description
         Read data from a Febus/reducted file or a socket directly connected to Febus DAS
@@ -344,52 +129,59 @@ class A1File:
 
         Data are read as float32 and are converted by default as float64 unless specified
 
-        ## Input:
+        ## Input all format:
+            trange = (list/tuple) time range in sec from 1st sample, [start, end]/[value] or
+                     (range) index range  (default = None, read all)
+            drange = (list/tuple) distance range in meter from 1st sample [start, end]/[value] or
+                     (range) index range (default = None, read all)
+            skip = (bool) read all blocks/chunck of data (False) or one over 2 (True) (default False)
+                blocks contains redundant data, skip=True is faster but may yield some errors on block limits
+            verbose = verbosity level
+            float_type = 'float_32' or 'float_64' float type for data in memory, default is float64
+
+        ## Input febus file
             block = (list), block=[start, end, step]. Read full block of data, from start to end by step.
                 [0,0,?] read all blocks
                 [] read one block
                 default = None
-            trange = (list), in sec, trange=[start_time, end_time], select time from start_time to end_time
-                default = None
-            drange = (list), in meter, drange=[start_position, end_position], select distance from start_position
-                to end_position
-                default = None
-            skip = read all blocks/chunck of data (False) or one over 2 (True)
-                blocks contains redundant data, skip=True is faster but may yield some errors on block limits
-            verbose = verbosity level
-            float_type = 'float_32' or 'float_64' float type for data in memory, default is float64
-            tdecim = (int) time decimation, default=None
+            ddecim = (int) decimation along spatial dimension, (default 1, must be a divider of chunck/block size)
 
-            **kwargs= any optionnal supplementary arguments, see below
+        ## Input reducted file and transposed data
+            tdecim = (int) time decimation (default 1)
 
         ## Return:
         A `A1Section` class instance
 
         ## Usage example
             >>> import a1das
-            >>> f = a1das.open("my_filename")
-            >>> a1 = f.read(trange=(0.,1800.),drange=(100., 900.),skip=False)
+            >>> f = a1das.open("my_filename", format='febus')
+            >>> a1 = f.read(trange=(0.,1800.),drange=(100., 900.),skip=False) #select by time and distance
+            >>> a2 = f.read(trange=range[0,100]) #select by indices
 
-        ## optionnal arguments
-        for Febus files:
-             ddecim = decimation along spatial dimension, (must be a divider of chunck/block size)
         """
 
         from ._core_febus_file import read_febus_file
         from ._core_reducted_file import read_reducted_file
         from ._core_socket import read_das_socket
 
-        # read from a file (febus or reducted)
+        #
+        # read from a febus file file
+        #
         if self.file_header is not None:
             if self.file_header.type == 'febus':
-                data_header, data = read_febus_file(self, block, trange, drange, ddecim, skip, verbose=verbose,**kwargs)
-
+                data_header, data = read_febus_file(self, block = block, drange=drange, trange=trange, ddecim=ddecim,
+                                                    skip = skip, verbose=verbose, float_type=float_type)
+        #
+        # read from a reducted file
+        #
             elif self.file_header.type == 'reducted':
-                data_header, data = read_reducted_file(self, trange=trange, drange=drange, verbose=verbose,**kwargs)
-
+                data_header, data = read_reducted_file(self, drange=drange, trange=trange, verbose=verbose,
+                                                       float_type=float_type, tdecim=tdecim)
+        #
         # read from a socket
+        #
         elif self.socket_header is not None:
-            data_header, data = read_das_socket(self, block, drange=drange, ddecim=ddecim,**kwargs)
+            data_header, data = read_das_socket(self, block = block, drange=drange)
 
         else:
             data_header = data = None
@@ -404,6 +196,7 @@ class A1File:
     #
     def close(self):
         """
+        ## Description
         Close a das file or socket stream
 
         """
@@ -419,6 +212,48 @@ class A1File:
         elif self.socket_header:
             close_das_socket(self.socket_header)
             self.socket_header = None
+
+    #
+    # ====================================   SET_OTIME_FROM_FILENAME()  =======================================
+    #
+    def set_otime_from_filename(self, offset=0., prefix=None):
+        """
+        ##Description
+        Set data header origin time from the filename assuming Febus convention on the filename
+        ex: SR_2021-08-26_14-32-39_UTC.h5.
+        This call affect the origin time to file header and is propagated to all subsequent A1File.read() call
+        This does not affect the values of the <time> vector which always refer to the origin (ie starting) time
+        ##Input
+            offset = a time offset to add/substract from the filename information
+            prefix = a prefix ending by "_" in case the filename do not follow Febus convention (SR_, RAW_, S_, ...)
+        """
+        from datetime import timezone, datetime
+        from ._a1das_exception import WrongValueError
+
+        name = self.file_header.filename
+        # expected to be of the form SR_2021-08-26_14-32-39_UTC.h5
+        if prefix is None:
+            start = name.find("_")
+            ofs = 1
+        else:
+            start = name.find(prefix)
+            ofs = len(prefix)
+
+        if start == -1:
+            raise WrongValueError('could not set origin time from filename, check filename and/or prefix')
+            return
+        end = name.find("_UTC")
+        s = name[start+ofs:end]
+        # convert from string
+        try:
+            d = datetime.strptime(s, "%Y-%m-%d_%H-%M-%S")
+        except:
+            raise ValueError('wrong date-time format, check file prefix')
+
+        # convert to UTC
+        dd = datetime(d.year, d.month, d.day, d.hour, d.minute, d.second, tzinfo=timezone.utc)
+        # convert to Posix
+        self.data_header.set_item(otime=dd.timestamp()+offset)
 
 
     #
@@ -486,15 +321,16 @@ class A1File:
 
     def _get_time_bounds(self, block=None, trange=None, skip=True, align_on_block=False, tdecim=None):
         """
-        file_header._get_time_bounds(block, trange, skip, align_on_block, tdecim)
+        a1file._get_time_bounds(block, trange, skip, align_on_block, tdecim)
 
         Create block and time indices for reading according to the argument choice
 
         block    = [first_block, last_block] select data comprised between first_block, last_block (comprised),
                     default = None
-        trange   = extract time starting at range[0] to range[1] or everything is trange=None and block = None
+        trange   = [start, end] sec, extract time starting at trange[0] to trange[1] or everything is trange=None and block = None
+                  start & end are counted with respect to file relative start-time (0=1st sample)
         skip     = skip redundant block when reading data (default = True)
-        align_on_block = aligned data on start of block & end of block rather than exact time (if trange is set)
+        align_on_block = align data on start of block & end of block rather than exact time (if trange is set)
         tdecim   = time decimation factor
 
         return:  first_block,    = first block to be read in the file
@@ -511,14 +347,14 @@ class A1File:
         nb_block_max = self.file_header.block_info['nb_block']  # total number of block in the file
         freq_res = self.file_header.freq_res  # frequency of block writing
 
-        bts = self.file_header.block_info['time_size']
+        bts = self.file_header.block_info['block_time_size']
         bts2 = int(bts / 2)
         bts4 = int(bts / 4)
-        dT = self.data_header['dt']
+        dt = self.data_header['dt']
         origin_time = self.data_header['otime']
 
         # origin time of the file is the first sample read by febus (they skip one fourth of the first block)
-        offset = bts4 * dT
+        offset = bts4 * dt
         #offset_rule = offset
         # origin time of the file is the first sample of the file (this solution according to Gaëtan)
         offset_rule = 0.
@@ -552,7 +388,7 @@ class A1File:
                 if nb_block % 2 == 0:
                     nb_block = max(nb_block + 1, nb_block_max)
                     last_block = first_block + nb_block - 1
-                from_time = first_block * bts2 * dT
+                from_time = first_block * bts2 * dt
                 # Total_time_size = number of time samples that we read in the time series
                 total_time_size = (nb_block + 1) * bts2
                 # total_time_size = nb_block * bts2 #ModifOC
@@ -561,9 +397,9 @@ class A1File:
 
             # for skip = 1, read every block, no restriction, but read only half of their size
             # start time is the first quarter of the first block because we don't want to manage
-            # the 1st quarter of block (by laziness...)
+            # the 1st quarter of the block
             else:
-                from_time = first_block * bts2 * dT + bts4 * dT
+                from_time = first_block * bts2 * dt + bts4 * dt
                 total_time_size = nb_block * bts2
                 # time indices for 1st block, other blocks, last block
                 time_indices = [[bts4, 3 * bts4], [bts4, 3 * bts4], [bts4, 3 * bts4]]
@@ -576,15 +412,15 @@ class A1File:
 
             if not skip:
                 # check range that was given as argument
-                min_time = bts4 * dT
-                max_time = ((nb_block_max * bts2 + bts4) * dT)
+                min_time = bts4 * dt
+                max_time = ((nb_block_max * bts2 + bts4) * dt)
                 if from_time > max_time or to_time <min_time:
                     raise WrongValueError('time range requested is beyond time bounds')
                 if from_time < min_time:
                     from_time = min_time
                     print('Warning: trange min is to small, set to:', str(from_time))
                 if to_time > max_time:
-                    to_time = (nb_block_max * bts2 + bts4) * dT
+                    to_time = (nb_block_max * bts2 + bts4) * dt
                     print('Warning: trange max is to high, set to:', str(to_time))
 
                 # first_block = int(np.fix(from_time * freq_res))  # index of block containing the start time
@@ -602,10 +438,10 @@ class A1File:
                 # For future use: if we decide not to round to block limits
 
                 if not align_on_block:
-                    dt_1 = from_time - (first_block * bts2 + bts4) * dT
-                    i_1 = int(dt_1 / dT)
-                    dt_last = to_time - ((last_block - 1) * bts2 + bts4) * dT
-                    i_last = int(dt_last / dT)
+                    dt_1 = from_time - (first_block * bts2 + bts4) * dt
+                    i_1 = int(dt_1 / dt)
+                    dt_last = to_time - ((last_block - 1) * bts2 + bts4) * dt
+                    i_last = int(dt_last / dt)
                     if nb_block >1:
                         time_indices = [[bts4 + i_1, 3 * bts4], [bts4, 3 * bts4], [bts4, i_last + bts4]]
                     else:
@@ -613,7 +449,7 @@ class A1File:
                     total_time_size = (nb_block * bts2) - i_1 - (bts2 - i_last)
                 else:
                     time_indices = [[bts4, 3 * bts4], [bts4, 3 * bts4], [bts4, 3 * bts4]]
-                    from_time = (first_block * bts2 + bts4) * dT
+                    from_time = (first_block * bts2 + bts4) * dt
                     # Total_time_size = number of time samples in the time series
                     total_time_size = nb_block * bts2
 
@@ -621,7 +457,7 @@ class A1File:
 
             else:  # skip = True
                 min_time = 0.
-                max_time = ((nb_block_max + 1) * bts2 * dT)
+                max_time = ((nb_block_max + 1) * bts2 * dt)
                 if from_time > max_time or to_time <min_time:
                     raise WrongValueError('time range requested is beyond time bounds')
                 if from_time < min_time:
@@ -648,11 +484,11 @@ class A1File:
                 # For future use: if we decide not to round to block limits
                 if not align_on_block:
                     # starting time in the first block of the first point
-                    dt_1 = from_time - first_block * bts2 * dT
-                    i_1 = int(dt_1 / dT)
+                    dt_1 = from_time - first_block * bts2 * dt
+                    i_1 = int(dt_1 / dt)
                     # ending time in the last block of the first point
-                    dt_last = to_time - (last_block - 1) * bts2 * dT
-                    i_last = int(dt_last / dT) + 1 #modifOC
+                    dt_last = to_time - (last_block - 1) * bts2 * dt
+                    i_last = int(dt_last / dt) + 1 #modifOC
                     if nb_block > 1:
                         time_indices = [[i_1, bts], [0, bts], [0, i_last]]
                     else:
@@ -660,7 +496,7 @@ class A1File:
                     total_time_size = (nb_block + 1) * bts2 - i_1 - (bts - i_last)
                 else:
                     time_indices = [[0, bts], [0, bts], [0, bts]]
-                    from_time = first_block * bts2 * dT
+                    from_time = first_block * bts2 * dt
                     # Total_time_size = number of time samples in the time series
                     total_time_size = (nb_block + 1) * bts2
 
@@ -669,14 +505,15 @@ class A1File:
         # The calling process must ensure that the block size is a multiplier of decimation factor
         # case no decimation
         if tdecim is None or tdecim == 1:
-            time_vector_out = arange(0, total_time_size) * dT + from_time #+ origin_time
+            time_vector_out = arange(0, total_time_size) * dt + from_time
         # case no time range and time decimation
+
         elif not trange:
-            time_vector_out = arange(0, total_time_size, tdecim) * dT + from_time #+ origin_time
+            time_vector_out = arange(0, total_time_size, tdecim) * dt + from_time
         # case
         else:
-            print('Time decimation is only valid when reading complete file or a block list')
-            time_vector_out = arange(0, total_time_size) * dT + from_time #+ origin_time
+            #print('Time decimation is only valid when reading complete file or a block list')
+            time_vector_out = arange(0, total_time_size, tdecim) * dt + from_time
 
         return first_block, last_block, step_block, time_vector_out, time_indices
 
@@ -729,48 +566,6 @@ class A1File:
 
         return distance_fiber_out, distance_indices, distance_fiber_in
 
-    #
-    # ====================================   SET_OTIME_FROM_FILENAME()  =======================================
-    #
-    def set_otime_from_filename(self, offset=0., prefix=None):
-        """
-        ##Description
-        Set data header origin time from the filename assuming Febus convention on the filename
-        ex: SR_2021-08-26_14-32-39_UTC.h5.
-        This call affect the origin time to file header and is propagated to all subsequent A1File.read() call
-        This does not affect the values of the <time> vector which always refer to the origin (ie starting) time
-        ##Input
-            offset = a time offset to add/substract from the filename information
-            prefix = a prefix ending by "_" in case the filename do not follow Febus convention (SR_, RAW_, S_, ...)
-        """
-        from datetime import timezone, datetime
-        from ._a1das_exception import WrongValueError
-
-        name = self.file_header.filename
-        # expected to be of the form SR_2021-08-26_14-32-39_UTC.h5
-        if prefix is None:
-            start = name.find("_")
-            ofs = 1
-        else:
-            start = name.find(prefix)
-            ofs = len(prefix)
-
-        if start == -1:
-            raise WrongValueError('could not set origin time from filename, check filename and/or prefix')
-            return
-        end = name.find("_UTC")
-        s = name[start+ofs:end]
-        # convert from string
-        try:
-            d = datetime.strptime(s, "%Y-%m-%d_%H-%M-%S")
-        except:
-            raise ValueError('wrong date-time format, check file prefix')
-
-        # convert to UTC
-        dd = datetime(d.year, d.month, d.day, d.hour, d.minute, d.second, tzinfo=timezone.utc)
-        # convert to Posix
-        self.data_header.set_item(otime=dd.timestamp()+offset)
-
     def time(self):
         """
         ## Description
@@ -785,9 +580,10 @@ class A1File:
         """
         return self.data_header['dist']
 
-    #
-    # ========================================= CLASS A1SECTION ============================
-    #
+
+#
+# ========================================= CLASS A1SECTION ============================
+#
 class A1Section:
     """
     ## Description
@@ -796,10 +592,14 @@ class A1Section:
     ## Class content
 
         A1Section.data:         2D float array (ndarray of shape [ntime x nspace] or [nspace x ntime])
-        A1Section.data_header   metadata       (_A1DataHeader class instance)
+                          or
+                                4 x 2D int8 array (ndarray of shape |4 x ntime x nspace]) for febus RAW data
+        A1Section.data_header   header       (_A1DataHeader class instance)
 
 
-    ## Reading/setting data_header metadata
+    ## Reading/setting data_header key+value
+    The list of header (key,value) store in a A1section named 'a' is obtained by typing: print(a)
+
     Read directly as a dictionnary from a1_section ex: a1['dt'] or through data_header ex: a1.data_header['dt']
 
     Set by the set_item method() ex: a1.set_item(dt=0.1) or through data_header ex: a1.data_header.set_item(dt=0.1)
@@ -818,20 +618,97 @@ class A1Section:
                                   # If data_header['axis'] = 'time_x_space' first dimension is time
                                   # If data_header['axis'] = 'space_x_time' first dimension is space
 
+    def __str__(self):
+        """
+        invoked by print()
+        """
+        from io import StringIO
+        s = StringIO()
+
+        s.write('\n<A1Section>:')
+        s.write('\n--------------')
+        s.write('\ndata: \nndarray data[' + str(self.data.shape[0]) + 'x' + str(self.data.shape[1]) + ']')
+
+        # print file_header part
+        s.write('\ndata_header: ')
+        s.write(self.data_header.__str__())
+
+        return s.getvalue()
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __getitem__(self, *items):
+        """
+        overload [] operator for the A1Section class
+        a['field'] returns the header field value
+        a[n1:n2,m1:m2] returns the data slices
+        """
+        # request for header value
+        from numpy import nanargmin
+        if len(items) == 1 and isinstance(items[0],str):
+            return self.data_header._header[items[0]]
+
+        slices = items[0]
+        # request for data slice
+
+        if isinstance(slices[0],slice) and isinstance(slices[1],slice):
+            islice1, islice2 = self.data_header.dim2index(slices[0],slices[1])
+            return self.data[islice1, islice2]
+
+    #
+    #
+    #
+    def subsection(self,trange=(None,None),drange=(None,None)):
+        """
+        ## Description
+        return a A1Section which is a subsection of the original section
+
+        ## Input
+        trange = (list) [start, stop] time range in sec starting from origin time. (default = (None, None), keep all)
+        drange = (list) [start, stop]] distance range in m starting from origin. (default = (None, None), keep all)
+        """
+        tslice=slice(trange[0],trange[1],None)
+        dslice=slice(drange[0],drange[1],None)
+        if self['axis1'] == 'time':
+            itslice, idslice = self.data_header.dim2index(tslice, dslice)
+        else:
+            idslice, itslice = self.data_header.dim2index(dslice, tslice)
+
+        data_header = self.data_header.copy()
+
+        data_header.set_item(dist=self['dist'][idslice])
+        data_header.set_item(nspace=len(self['dist'][idslice]))
+        data_header.set_item(time=self['time'][itslice])
+        data_header.set_item(ntime=len(self['time'][itslice]))
+
+        if self['axis1'] == 'time':
+            newdata = self.data[itslice, idslice].copy()
+        else:
+            newdata = self.data[idslice, itslice].copy()
+
+        return A1Section(dhd=data_header, data=newdata)
+    #
+    # ====================================   time()  =======================================
+    #
     def time(self):
         """
         ## Description
-        Return the time vector defined in the <A1Section> data_header, i.e. shortcut for a1.data_header['time']
+        Return the time vector defined in the <A1Section> data_header, i.e. shortcut for a1.data_header['time'] or a1['time']
         """
         return self.data_header['time']
-
+    #
+    # ====================================   dist()  =======================================
+    #
     def dist(self):
         """
         ## Description
-        Return the distance vector defined in the <A1Section> data_header, i.e. shortcut for a1.data_header['dist']
+        Return the distance vector defined in the <A1Section> data_header, i.e. shortcut for a1.data_header['dist'] or a1['dist']
         """
         return self.data_header['dist']
-
+    #
+    # ====================================   otime()  =======================================
+    #
     def otime(self):
         """
         ##Description
@@ -842,32 +719,17 @@ class A1Section:
         posix_otime, string_otime
         """
         from datetime import datetime, timezone
-        time = self['time']   # could read otime too
-        otime=time[0]
+        otime = self['otime']
 
-        return otime, datetime.fromtimestamp(otime, tz=timezone.utc).strftime('%Y:%M:%d-%H:%M:%S.%f')
+        return otime, datetime.fromtimestamp(otime, tz=timezone.utc).strftime('%Y:%m:%d-%H:%M:%S.%f')
 
-
-    def __str__(self):
-        from io import StringIO
-        s = StringIO()
-
-        s.write('\n<A1Section>:')
-        s.write('\n--------------')
-        s.write('\ndata: \nndarray data['+str(self.data_header['ntime'])+'x'+str(self.data_header['nspace'])+']\n')
-        # print file_header part
-        s.write('\ndata_header: ')
-        s.write(self.data_header.__str__())
-
-        return s.getvalue()
-
-    def __repr__(self):
-        return self.__str__()
-
+    #
+    # ====================================   set_item()  =======================================
+    #
     def set_item(self, **kwargs):
         """
         ##Description
-        Update/create a matadata entry in the data_header class dictionnary attached to A1Section
+        Update/create a header entry in the data_header class dictionnary attached to A1Section
 
         ##Input
             **kwargs = arbitrary list of key_word = value
@@ -879,15 +741,260 @@ class A1Section:
 
         """
         self.data_header.set_item(kwargs)
-        
-    def __getitem__(self, item):
+
+    #
+    # ====================================   is_transposed()  =======================================
+    #
+    def is_transposed(self):
         """
-        overload [] operator for the A1Section class
+        ## Description
+        Only relevant for <reducted> format, return True if the data are transposed in file from the original Febus format.
+        Transposed =  the data array is stored as data[nspace, ntime],
+        Not transposed = the data array is stored as data[ntime, nspace],
+
+        ## Return
+        False for Febus original files, True/False for reducted files
         """
-        try:
-            return self.data_header._header[item]
-        except:
-            return None
+        # test on first axis <time> or <space>
+        if self['axis1'] == 'time':
+            return False
+        else:
+            return True
+    #
+    # ====================================   Synchronize()  =======================================
+    #
+    def synchronize(self):
+        """
+        ## Description
+        This function is similar to the synchronize command in SAC.
+        Set the origin time (field 'otime' in data header) to the time of the first sample
+        in the section. After this operation, the value of time[0] is equal to 0.
+        """
+        otime = self['otime']
+        time = self['time']
+        otime += time[0]
+        time -= time[0]
+        self.set_item(otime=otime)
+        self.set_item(time=time)
+
+    #
+    # ====================================   OBSPY_STREAM()  =======================================
+    #
+    def obspy_stream(self, drange=None, station_name=None):
+        """
+        ##Description
+        Return an obspy stream from a DAS section with optional spatial range drange
+
+        ##Input
+            drange: = (dmin, dmax) list or tuple with minimal and maximal distance in meter
+        ##Return
+            An obspy stream
+        """
+        from obspy.core import Stream, Trace, UTCDateTime
+        from ._a1das_exception import WrongValueError
+
+        st = Stream()
+        if drange is None:
+            s0=0
+            s1=self['nspace']
+        else:
+            s = self.index(drange)
+            s0 = s[0]
+            s1 = s[1]+1
+
+        dist = self['dist']
+        time = self['time']
+        if station_name is None:
+            station_name = 'DAS'
+        for i in range(s0, s1):
+            header = {'npts': self.data_header['ntime'],
+                      'station': station_name,
+                      'starttime': UTCDateTime(self.data_header['otime']+time[0]),
+                      #'sampling_rate': 1./float64(self.data_header['dt']),
+                      'location': str(int(dist[i]))+'m',
+                      'channel': 'S',
+                      'delta' : self.data_header['dt']
+                      }
+            if self.data_header['axis1'] == 'time':
+                st.append(Trace(data=self.data[:,i], header=header))
+            elif self.data_header['axis1'] == 'space':
+                st.append(Trace(data=self.data[i,:], header=header))
+
+        return st
+
+    # ====================================   INDEX()  =======================================
+    #
+    def index(self, drange=None, trange=None):
+        """
+        ## Description
+        Return the index or list of indices that correspond(s) to the list of distance(resp. time) range
+        in the 'distance' vector (resp. time vector)
+
+        ## Input
+        !!!!! Only one of trange or drange can be given
+
+        drange = (list or tuple) [unique_dist]; [dist_min, dist_max]; [dist1, dist2, ... distN] (default = None, take all)
+
+        trange = (list or tuple) [unique_time]; [time_min, time_max]; [t1, t2, ... tN]  (default = None, take all)
+
+        ## Return
+        A list of indices that matches the given range in the A1Section.data_header['dist'] or
+        A1Section.data_header['time'] vectors
+
+        ## Usage example
+        >>> import a1das
+        >>> f=open('filename')
+        >>> a=f.read()
+        >>> dhd = a.data_header
+
+        >>> dlist1 = dhd.index(drange=50.)            # get index for distance 50.m
+        >>> dlist1 = dhd.index(drange=[50.])          # get index at distance 50 m
+        >>> dlist2 = dhd.index(drange=[50., 60.])     # get 2 indices at 50 and 60m
+        >>> dlist3 = dhd.index(drange=[[dist] for dist in np.arange(50,60.,1.)]) # get all indices for distance 50< ..<60 every 1m
+        >>> dlist4 = dhd.index(drange=(50.,60.))        # get all indices between 50. and 60.m
+        >>> tlist = dhd.index(trange=[10., 20.])      # 2 indices for time 10s and 20 sec after 1st sample
+        """
+        return self.data_header.index(drange=drange, trange=trange)
+
+    #
+    # ====================================   PLOT()  =======================================
+    #
+    def plot(self, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, by_trace=False, variable_area=False, drange=None, trange=None, redraw=None):
+        """
+        ##Description
+        Produce a vector plot of the das section, optionnaly with variable area
+
+        ##Input
+            fig= figure handle (default None)
+            clip= (int) clip amplitude at clip% of the max amplitude (default 100%)
+            splot= (tupple) plot as a subplot (default subplot(1,1,1))
+            title= (str) figure title (default None)
+            max= (int) maximum number of traces on the plot (default 100)
+            amax= maximum amplitude for clipping if not using clip percentage (default None)
+            by_trace = (bool) normalize by plot (False) or by trace (True) (default=False)
+            variable_area= (bool) plot with variable_are (half wiggle is filled in black) (default False)
+            drange= (tupple) distance range [dmin, dmax]
+            trange= (tupple) time range [tmin, tmax]
+            redraw = {lines} redraw lines of a precedent figure  or None for new plot, requires fig argument
+
+        ##Return
+            figure_handle, curve_list
+
+        ##Usage example
+            >>>import a1das
+            >>>f=a1das.open(filename)
+            >>>a1=f.read()
+            >>>a1.plot(clip=50,variable_area=True)
+        """
+        from a1das._plot import plot
+        from ._a1das_exception import ReadDataError
+
+        if self.data is None:
+            raise ReadDataError('Hum Hum, read data before plotting ...')
+        fig, redraw = plot(self,fig, clip, splot, title, max, amax, by_trace, variable_area, drange, trange, redraw)
+
+        return fig, redraw
+    #
+    # ====================================   RPLOT()  =======================================
+    #
+    def rplot(self, fig=None, cmap='RdBu', vrange=None, splot=(1, 1, 1), title='', drange=None, trange=None):
+        """
+        ##Description
+        Produce a raster plot of the das section
+        ##Input
+            fig= figure handle (default None)
+            cmap= colormap (default=RdBu)
+            vrange= trace amplitude range (default None)
+            splot= plot as a subplot (default subplot(1,1,1))
+            title= figure title (default None)
+            drange= distance range
+            trange= time range
+
+        ## Return
+            figure_handle, axes_handle
+
+        ##Usage example
+            >>>import a1das
+            >>>f=a1das.open(filename)
+            >>>a1=f.read()
+            >>>a1.rplot()
+        """
+        from a1das._plot import rplot
+        from ._a1das_exception import ReadDataError
+
+        if self.data is None:
+            raise ReadDataError('Hum Hum, read data before plotting ...')
+
+        fig, ax = rplot(self,fig, cmap, vrange, splot, title, drange, trange)
+
+        return fig, ax
+    #
+    # ====================================   save()  =======================================
+    #
+    def save(self,filename):
+        """
+        ## Description
+        a.save(filename)
+
+        Save a `A1Section` in a file using the reducted file format.
+
+        ## Input
+        filename= a name for the hdf5 file that contains the reducted file
+
+        ## Usage example
+            >>> import a1das
+            >>> f = a1das.open('my_filename', format='febus')
+            >>> a = f.read(trange=(tmin,tmax), drange=(dmin,dmax), skip=False) # read and extract a subportion of the original file
+            >>> a.save('new_section') # 'a' can be read later using the same a1das.open() and f.read() functions
+            >>> f.close()
+
+        """
+        from ._core_reducted_file import _save_reducted_file
+
+        _save_reducted_file(self,filename)
+    #
+    # ====================================   concat()  =======================================
+    #
+    def concat(self, b):
+        """
+        ## Description
+            a.concat(b): Concatenate section b behind section a along the fast axis
+            if a and b are ordered as [space x time], fast axis is time and on obtain a new section [ space x 2*time]
+            if a and b are ordered as [time x space], not implemented
+
+        ## Return
+            a new section
+        """
+        import numpy as np
+        from ._a1das_exception import DataTypeError
+
+        if self['axis1'] !=  b['axis1']:
+            raise DataTypeError('section must be ordered with data as time x space')
+
+        dta = self['dt']
+        dtb = b['dt']
+        if dta != dtb:
+            raise DataTypeError('concat failed, different sampling rate')
+
+        time_a = self['time']
+        time_b = b['time'] + time_a[-1] + dta
+        print()
+
+        nspace_a = self['nspace']
+        nspace_b = b['nspace']
+        if nspace_a != nspace_b:
+            raise DataTypeError('concat: different spatial spacing')
+
+
+
+        # Create new section
+        data_header = self.data_header.copy()
+        data_header.set_item(ntime=self['ntime']+b['ntime'])
+        data_header.set_item(time=np.concatenate((time_a,time_b)))
+        newdata = np.vstack((self.data, b.data))
+
+        return A1Section(data_header, newdata)
+
     #
     # ====================================   SET_OTIME_FROM_FILENAME()  =======================================
     #
@@ -933,245 +1040,6 @@ class A1Section:
             self.data_header.set_item(otime=dd.timestamp()+offset)
         else:
             raise WrongValueError('<filename> is not defined in data header')
-
-    #
-    # ====================================   OBSPY_STREAM()  =======================================
-    #
-    def obspy_stream(self, drange=None, station_name=None):
-        """
-        ##Description
-        Return an obspy stream from a DAS section with optional spatial range drange
-
-        ##Input
-            drange: = (dmin, dmax) list or tuple with minimal and maximal distance in meter
-        ##Return
-            An obspy stream
-        """
-        from obspy.core import Stream, Trace, UTCDateTime
-        from ._a1das_exception import WrongValueError
-
-        st = Stream()
-        if drange is None:
-            s0=0
-            s1=self['nspace']
-        else:
-            s = self.index(drange)
-            s0 = s[0]
-            s1 = s[1]+1
-
-        dist = self['dist']
-        time = self['time']
-        if station_name is None:
-            station_name = 'DAS'
-        for i in range(s0, s1):
-            header = {'npts': self.data_header['ntime'],
-                      'station': station_name,
-                      'starttime': UTCDateTime(self.data_header['otime']+time[0]),
-                      #'sampling_rate': 1./float64(self.data_header['dt']),
-                      'location': str(int(dist[i]))+'m',
-                      'channel': 'S',
-                      'delta' : self.data_header['dt']
-                      }
-            if self.data_header['data_axis'] == 'time_x_space':
-                st.append(Trace(data=self.data[:,i], header=header))
-            elif self.data_header['data_axis'] == 'space_x_time':
-                st.append(Trace(data=self.data[i,:], header=header))
-            else:
-                raise WrongValueError('<data_axis> header field is neither <time_x_space> nor <space_x_time>')
-        return st
-
-    # ====================================   INDEX()  =======================================
-    #
-    def index(self, drange=None, trange=None):
-        """
-        ## Description
-        Return the index or list of indices that correspond(s) to the list of distance(resp. time) range
-        in the 'distance' vector (resp. time vector)
-
-        ## Input
-        !!!!! Only one of trange or drange can be given
-
-        drange = [unique_dist]; [dist_min, dist_max]; [d1, d2, ... dN]  (default = None)
-
-        trange = [unique_time]; [time_min, time_max]; [t1, t2, ... tN]  (default = None)
-
-        ## Return
-        A list of indices that matches the given range in the A1Section.data_header['dist'] or
-        A1Section.data_header['time'] vectors
-
-        ## Usage example
-        >>> import a1das
-        >>> f=open('filename')
-        >>> a=f.read()
-        >>> dlist1 = a.index(drange=[50.])          # single index at distance 50 m
-        >>> dlist1 = a.index(50.)                   # single index at distance 50 m
-        >>> dlist2 = a.index(drange=[50., 60.])     # 2 indices at 50m and 60m
-        >>> dlist3 = a.index(drange=[[dist] for dist in np.arange(50,60.,1.)]) # all indices for distance 50< ..<60 every 1m
-        >>> tlist = a.index(trange=[10.,11.])       # time indices for time between 10. and 20s after 1st sample
-        """
-        from numpy import nanargmin, abs, ndarray
-        from ._a1das_exception import DataTypeError, WrongValueError
-
-        if drange is not None and trange is not None:
-            raise WrongValueError('cannot define trange AND drange, select one of two')
-
-        if drange is None and trange is None:
-            raise WrongValueError('Please define one of drange(distance range) or trange (time range)')
-
-        if drange is not None:
-            dtrange=drange
-            vec = self.data_header['dist']
-        else:
-            dtrange=trange
-            vec = self.data_header['time']
-
-        if isinstance(dtrange, ndarray):
-            raise DataTypeError('range must be a list or tuple')
-
-        if isinstance(dtrange,float):
-            dtrange=[dtrange]
-
-        if dtrange is None:
-            return [0, -1]
-
-        d1 = nanargmin(abs(vec - dtrange[0]))
-        indx = [d1]
-        if len(dtrange) == 1:
-            indx.append(d1+1)
-        else:
-            for i in range(1,len(dtrange)):
-                indx.append(nanargmin(abs(vec-dtrange[i])))
-        return indx
-    #
-    # ====================================   PLOT()  =======================================
-    #
-    def plot(self, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, variable_area=False, drange=None, trange=None, redraw=None):
-        """
-        ##Description
-        Produce a vector plot of the das section, optionnaly with variable area
-        ##Input
-            fig= figure handle (default None)
-            clip= (int) clip amplitude at clip% of the max amplitude (default 100%)
-            splot= (tupple) plot as a subplot (default subplot(1,1,1))
-            title= (str) figure title (default None)
-            max= (int) maximum number of traces on the plot (default 100)
-            amax= maximum amplitude for clipping if not using clip percentage (default None)
-            variable_area= (bool) plot with variable_are (half wiggle is filled in black) (default False)
-            drange= (tupple) distance range [dmin, dmax]
-            trange= (tupple) time range [tmin, tmax]
-            redraw = {lines} redraw lines of a precedent figure  or None for new plot, requires fig argument
-
-        ##Return
-            figure_handle, curve_list
-
-        ##Usage example
-            >>>import a1das
-            >>>f=a1das.open(filename)
-            >>>a1=f.read()
-            >>>a1.plot(clip=50,variable_area=True)
-        """
-        from a1das._plot import plot
-        from ._a1das_exception import ReadDataError
-
-        if self.data is None:
-            raise ReadDataError('Hum Hum, read data before plotting ...')
-
-        fig, redraw = plot(self,fig, clip, splot, title, max, amax, variable_area, drange, trange, redraw)
-
-        return fig, redraw
-    #
-    # ====================================   RPLOT()  =======================================
-    #
-    def rplot(self, fig=None, cmap='RdBu', vrange=None, splot=(1, 1, 1), title='', drange=None, trange=None):
-        """
-        ##Description
-        Produce a raster plot of the das section
-        ##Input
-            fig= figure handle (default None)
-            cmap= colormap (default=RdBu)
-            vrange= trace amplitude range (default None)
-            splot= plot as a subplot (default subplot(1,1,1))
-            title= figure title (default None)
-            drange= distance range
-            trange= time range
-
-        ## Return
-            figure_handle, axes_handle
-
-        ##Usage example
-            >>>import a1das
-            >>>f=a1das.open(filename)
-            >>>a1=f.read()
-            >>>a1.rplot()
-        """
-        from a1das._plot import rplot
-        from ._a1das_exception import ReadDataError
-
-        if self.data is None:
-            raise ReadDataError('Hum Hum, read data before plotting ...')
-
-        fig, ax = rplot(self,fig, cmap, vrange, splot, title, drange, trange)
-
-        return fig, ax
-
-    def save(self,filename):
-        """
-        ## Description
-        a.save(filename)
-
-        Save a `A1Section` that has been read, extracted or converted from stream or files into the reducted file format.
-
-        ## Input
-        filename= a name for the hdf5 file that contains the reducted file
-
-        ## Usage example
-            >>> import a1das
-            >>> f = a1das.open('my_filename', format='febus')
-            >>> a = f.read(trange=(tmin,tmax), drange=(dmin,dmax), skip=False) # read and extract a subportion of the original file
-            >>> a.save('new_section') # 'a' can be read later using the same a1das.open() and f.read() functions
-            >>> f.close()
-
-        """
-        from ._core_reducted_file import _save_reducted_file
-        _save_reducted_file(self,filename)
-
-    def concat(self, b):
-        """
-        ## Description
-            a.concat(b): Concatenate section b behind section a along the fast axis
-            if a and b are ordered as [space x time], fast axis is time and on obtain a new section [ space x 2*time]
-            if a and b are ordered as [time x space], not implemented
-
-        ## Return
-            a new section
-        """
-        import numpy as np
-        from ._a1das_exception import DataTypeError
-
-        if self['data_axis'] != 'time_x_space' or b['data_axis'] != 'time_x_space':
-            raise DataTypeError('section must be ordered with data as time x space')
-
-        time_a = self['time']
-        time_b = b['time']
-
-        nspace_a = self['nspace']
-        nspace_b = b['nspace']
-        if nspace_a != nspace_b:
-            raise DataTypeError('concat: different spatial spacing')
-
-        dta = self['dt']
-        dtb = b['dt']
-        if dta != dtb:
-            raise DataTypeError('concat failed, different sampling rate')
-
-
-        # Create new section
-        data_header = self.data_header.copy()
-        data_header.set_item(ntime=self['ntime']+b['ntime'])
-        data_header.set_item(time=np.concatenate((time_a,time_b)))
-        newdata = np.vstack((self.data, b.data))
-
-        return A1Section(data_header, newdata)
 
 #
 # ========================================= OPEN()  ============================
@@ -1235,6 +1103,9 @@ def open(filename, format=None):
     if format is not None:
         raise WrongValueError(" could not open file<"+filename+">, wrong format argument?")
 
+#
+# ========================================= tcp_address()  ============================
+#
 def tcp_address(address='127.0.0.1', port=6667):
     """
     Return a string of the form <tcp://address:port> from an IP address and a port number
@@ -1243,6 +1114,25 @@ def tcp_address(address='127.0.0.1', port=6667):
         port = IP port default to 6667
     """
     return "tcp://%s:%d" % (address, port)
+#
+# ========================================= set_true_time_policy()  ============================
+#
+def set_true_time_policy(policy=True):
+    """
+    ##Description
+    set_true_time_policy()
+
+    Define if the true time policy is applied (True) or not (False)
+
+    When the true time policy is used, the timing of a sample is defined from the start time
+    of the block it was contained in.
+
+    When the true time policy is not used, one assume a constant time step for the time serie
+
+    Default is true_time_policy=True
+    """
+    from ._core_febus_file import _set_true_time_policy
+    _set_true_time_policy(policy)
 #
 # ========================================= private stuff ===========================
 #

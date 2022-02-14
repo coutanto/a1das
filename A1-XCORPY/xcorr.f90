@@ -58,7 +58,7 @@ subroutine compute_xcorr_core(arrayIn, nspace, ntime, len_xcor, lag, stack, arra
 use cxcor_mod
 use pxcor_mod
 
-real(kind=real64), intent(inout) :: arrayIn(nspace,ntime), array_xcorr(len_xcor,nx)
+real(kind=real64), intent(inout) :: arrayIn(:,:), array_xcorr(len_xcor,nx)
 integer, intent(in) :: ntime, nspace, len_xcor, lag, stack
 integer, intent(inout) :: nx, ijx(2,*)
 integer, intent(out) :: ier
@@ -66,11 +66,22 @@ real(kind=real64):: fmin,fmax,r,fs
 
 integer, allocatable :: list_trace(:)
 integer :: nt,stats, fft_len, i0
-real(kind=real64), allocatable :: arrayTmp(:,:)
+real(kind=real64), allocatable :: taper(:), arrayTmp(:,:)
+real(kind=real64) :: perc
 complex(kind=real64), allocatable :: arrayFFT(:,:),xspectra(:,:)
 type (fft_handle) :: fft_h
 integer :: i,l
+logical :: transposed
 ier=0
+
+!
+! test if array_in is (space x time) or transposed into (time x space)
+!
+if (size(arrayIn,1) == nspace) then
+   transposed = .false.
+else
+   transposed = .true.
+endif
 !
 ! test si la dimension de xcorr et ijx est suffisante
 !
@@ -102,7 +113,11 @@ call cxc%list_traces(list_trace,nt)
 ! pour avoir une transposition + petite, ou non?
 ! est-ce que cela est fait dans python?
 allocate(arrayTmp(ntime,nspace))
-call transpose(arrayIn, arrayTmp, nspace, ntime)
+if (transposed) then
+    arrayTmp = arrayIn
+else
+    call transpose(arrayIn, arrayTmp, nspace, ntime)
+endif
 
 
 !
@@ -123,6 +138,13 @@ else
     fft_len = ntime
 end if
 
+if (pxc%flag_raised("taper")) then
+   ! compute taper window to be used with fft
+   perc=pxc%proc(pxc%index("taper"))%args(1)
+   allocate(taper(fft_len))
+   call create_taper(fft_len, perc, taper)
+endif
+
 allocate(arrayFFT(fft_len,nt))
 call init_fft(fft_len, fft_h)
 
@@ -135,23 +157,23 @@ do i0 = 1,ntime,fft_len
 !
 ! compute FFT
 !
-    call compute_FFT(arrayTmp,arrayFFT, fft_len, i0, list_trace, nt, fft_h)
+    call compute_FFT(arrayTmp,arrayFFT, fft_len, i0, list_trace, nt, fft_h, taper)
 !
 ! processing spectraux
 !
     if (pxc%flag_raised("white")) then
-		fmin=pxc%proc(3)%args(1)
-		fmax=pxc%proc(3)%args(2)
+		fmin=pxc%proc(pxc%index("white"))%args(1)
+		fmax=pxc%proc(pxc%index("white"))%args(2)
       	call whitening(arrayFFT,fft_len,nt,fmin,fmax)
     endif
     if (pxc%flag_raised("bandpass")) then
-		fmin=pxc%proc(4)%args(1)
-		fmax=pxc%proc(4)%args(2)
+		fmin=pxc%proc(pxc%index("bandpass"))%args(1)
+		fmax=pxc%proc(pxc%index("bandpass"))%args(2)
       	call bandpass(arrayFFT,fft_len,nt,fmin,fmax)
     endif
 
     if (pxc%flag_raised("lowpass")) then
-		fmax=pxc%proc(5)%args(1)
+		fmax=pxc%proc(pxc%index("lowpass"))%args(1)
       	call lowpass(arrayFFT, fft_len, nt, fmax)
     endif
 
@@ -169,6 +191,7 @@ call compute_cross_corr(xspectra, array_xcorr, fft_len, cxc%nx, len_xcor, lag, f
 deallocate(arrayTmp)
 deallocate(arrayFFT)
 deallocate(xspectra)
+if (allocated(taper)) deallocate(taper)
 
 call release_fft(fft_h)
 
@@ -235,10 +258,11 @@ end subroutine release_fft
 ! =========================================================
 ! compute_fft
 ! =========================================================
-subroutine compute_FFT(array,c_array, nfft, i0, list, ntrace, fft_h)
+subroutine compute_FFT(array,c_array, nfft, i0, list, ntrace, fft_h, taper)
 use mkl_dfti
 
-real(kind=real64),intent(in)   :: array(:,:)
+real(kind=real64),intent(inout)   :: array(:,:)
+real(kind=real64),intent(in), allocatable   :: taper(:)
 complex(kind=real64),intent(out):: c_array(nfft,ntrace)
 integer , intent(in) :: nfft, i0,ntrace,list(ntrace)
 type(fft_handle), intent(in) :: fft_h
@@ -250,6 +274,7 @@ integer :: stats, i, ii
 !$OMP DO
 do i=1,ntrace
   ii=list(i)
+  if (allocated(taper)) array(i0:i0+nfft-1,ii) = array(i0:i0+nfft-1,ii)*taper
   Stats = DftiComputeForward (fft_h%h, array(i0:i0+nfft-1,ii), c_array(:,i))
 enddo
 !$OMP END PARALLEL
@@ -399,5 +424,21 @@ deallocate(cxt)
 
 end subroutine compute_cross_corr
 
+subroutine create_taper(len, perc, taper)
+implicit none
+integer, intent(in) :: len
+real(kind=real64), intent(in) :: perc
+real(kind=real64), intent(inout), allocatable :: taper(:)
+
+#define pi 3.14159265d0
+integer :: i,l
+l = floor(len*perc)
+taper=1.d0
+do i=1,l
+  taper(i) = (1. - cos(pi*(i-1)/l))/2.0
+  taper(len-l+i) = (1. - cos(pi*(l-i)/l))/2.0
+enddo
+
+end subroutine
 end module xcorr_mod
 

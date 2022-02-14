@@ -3,7 +3,7 @@
 #
 # TODO: mettre à jour les infos de chaque classe
 
-__doc__="This module contains error messages, not for end users"
+__doc__ = "This module contains error messages, not for end users"
 class Error(Exception):
     """Base class for exceptions in this module."""
     pass
@@ -43,7 +43,7 @@ class ReadDataError(Error):
 
 class WrongValueError(Error):
     """
-    Exception raised for errors in theData type
+    Exception raised for errors in the expected value
 
     Attributes:
         expression -- input expression in which the error occurred
@@ -65,11 +65,18 @@ class VirtualServerError(Error):
 
 class ZMQSocketError(Error):
     """
-    Exception raised for errors in theData type
+    Exception raised for errors in processing ZMQ socket
 
     Attributes:
         expression -- input expression in which the error occurred
         message -- explanation of the error
+    """
+    def __init__(self, message):
+        self.message = message
+
+class MissingHeaderKeywordError(Error):
+    """
+    Exception raised for missing keyword in header definition read from a reducted file or other source
     """
     def __init__(self, message):
         self.message = message

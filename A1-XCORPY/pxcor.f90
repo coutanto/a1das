@@ -22,11 +22,13 @@ end type
 
 type(description), parameter :: process_list(*) = &
    (/ &
+!                ("name", number_of_parameter)
      description("onebit",   0), &
      description("clip",     1), &
      description("white",    2), &
      description("bandpass", 2), &
-     description("lowpass",  1) &
+     description("lowpass",  1), &
+     description("taper",    1)  &
    /)
 !--------- END DEFINITION AND DESCRIPTION OF THE VARIOUS CORRELATION PROCESSING -----------
 
@@ -44,6 +46,7 @@ type pxcor
 contains
    procedure :: init
    procedure :: flag_raised
+   procedure :: index
 end type pxcor
 
 type(pxcor) :: pxc
@@ -122,6 +125,7 @@ subroutine pxc_register_proc(proc, val, nval, ier)
 end subroutine
 ! ===================
 ! flag_raised
+! return true if the process named proc is declared, or false otherwise
 ! ===================
 logical function flag_raised(this, proc) result(flag)
    class(pxcor) :: this
@@ -139,6 +143,25 @@ logical function flag_raised(this, proc) result(flag)
    if (i==size(this%proc)+1) write(0,*) 'Warning: processing ',proc,' unknown'
 
 end function
+! ===================
+! index
+! return the index of the process proc in the list of process declared above
+! ===================
+function index(this, proc)
+   class(pxcor) :: this
+   character(len=*) :: proc
+   integer :: index
 
+   integer :: i
+
+   if (.not. allocated(pxc%proc))  call pxc%init(process_list)
+   do i=1,size(this%proc)
+      if (trim(this%proc(i)%label) /= trim(proc)) cycle
+      index = i
+      exit
+   enddo
+   if (i==size(this%proc)+1) write(0,*) 'Warning: processing ',proc,' unknown'
+
+end function
 
 end module pxcor_mod

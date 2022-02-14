@@ -17,6 +17,21 @@
 #
 import numpy as np
 
+# relative tolerance on datation error
+# if datation error exceed this tolerance, data are assumed to be unevenly digitized
+__time_err_tol__ = 0.01
+
+# DATATION POLICY
+# if __true_time_policy__ = True
+# Use block start time supplied in Febus file to determine the sample times.
+# This implies a non constant time step and sample datation is obtained from the time vector
+#
+# if __true_time_policy__ = False
+# Assume a constant time step given by the Febus header
+#
+# The policy can be changed dynamically using the a1das.setTrueTimePolicy()
+#
+__true_time_policy__ = True
 
 #
 # ====================================    OPEN_FEBUS_FILE()  =======================================
@@ -33,118 +48,160 @@ def open_febus_file(filename):
      """
 
     import h5py
-    from .core import _A1DataHeader, _A1FileHeader
+    from ._a1headers import _A1DataHeader, _A1FileHeader
     from  ._a1das_exception import FileFormatError
 
+    chunk_cache_size = int(1024*1024)
     try:
-        f = h5py.File(filename, 'r')
+        f = h5py.File(filename, 'r', rdcc_nbytes = chunk_cache_size)
     except FileNotFoundError:
         print('could not open ', filename, ' as a file')
         raise FileNotFoundError
 
+    chunk_cache_size_is_ok = False
+    while not chunk_cache_size_is_ok:
+        #
+        # Organisation:    / DAS / SOURCE / ZONE
+        #
+        Zone = 1
+
+        # Initialisation
+        # Recuperation des donnees d'enetete, dans les attributs du groupe Source1
+        #
+        DAS = list(f.keys())  # only 1 elemts in this dict.
+        try:
+            DASName = DAS[0]  # 1st key gives name of groupe
+            DASNode = f['/' + DASName]
+        except:
+            raise FileFormatError('File not in <Febus_H5_format> or wrong versions')
+
+        SOURCES = list(DASNode.keys())
+        SOURCEName = SOURCES[0]
+        SOURCENode = f['/' + DASName + '/' + SOURCEName]
+        SrcAttr = SOURCENode.attrs  # it's a dict.
+        ZONEName = 'Zone' + str(Zone)
+        ZONENode = f['/' + DASName + '/' + SOURCEName + '/' + ZONEName]
+        ZneAttr = ZONENode.attrs
+        blockTimeNode = f['/' + DASName + '/' + SOURCEName +'/time']
+        block_times = blockTimeNode[:]
+
+        # DAS_name = DASName
+        prf = float(SrcAttr['PulseRateFreq'] / 1000.)
+        try:
+            freq_res = float(SrcAttr['FreqRes'] / 1000.)  # A chunk(block) of data is written @ (Freq_res/1000) Hz
+        except:
+            freq_res = float(SrcAttr['BlockRate'] / 1000.)  # A chunk(block) of data is written @ (BlockRate/1000) Hz
+        # Acquisition_length = SrcAttr['FiberLength']
+        sampling_res = float(SrcAttr['SamplingRes'])
+
+        try:
+            derivation_time = float(ZneAttr['DerivationTime'])
+        except KeyError:
+            derivation_time = None
+
+        #
+        # Space and time origin
+        #
+        Origin = ZneAttr['Origin']
+
+        #
+        # space and time steps
+        #
+        Spacing = ZneAttr['Spacing']
+        dt = Spacing[1] * 1.e-3  # time step in sec (given originally in msec)
+        dx = Spacing[0]  # distance step in m
+
+        try:
+            gauge_length = float(ZneAttr['GaugeLength'])
+        except KeyError:
+            gauge_length = 0.
+
+
+        #
+        # block structure and length
+        # Strain Rate or raw data
+        #
+        list_name = list(f['/' + DASName + '/' + SOURCEName + '/' + ZONEName])
+
+        dataset_name = list_name[0]
+
+        if dataset_name == 'Strain':
+            Name = '/' + DASName + '/' + SOURCEName + '/' + ZONEName + '/' + 'Strain'
+            Node = f[Name]
+            nb_block = Node.shape[0]
+            block_time_size = Node.shape[1]
+            block_space_size = Node.shape[2]
+            chunk_size = block_time_size * block_space_size
+            chunk_byte_size = chunk_size*4
+            #CHANNode = None
+            type = 'strain'
+
+        elif dataset_name == 'StrainRate':
+            Name = '/' + DASName + '/' + SOURCEName + '/' + ZONEName + '/' + 'StrainRate'
+            Node = f[Name]
+            nb_block = Node.shape[0]
+            block_time_size = Node.shape[1]
+            block_space_size = Node.shape[2]
+            chunk_size = block_time_size * block_space_size
+            chunk_byte_size = chunk_size * 4
+            #CHANNode = None
+            type = 'strain-rate'
+
+        elif dataset_name == 'ch1':
+            Name = '/' + DASName + '/' + SOURCEName + '/' + ZONEName + '/' + 'ch'
+            Node = [None, None, None, None]
+            for i, j in enumerate(range(0, 4)):
+                Node[i] = f[Name + str(i + 1)]
+            # Assume all phases have same dimensions nblock x space_size x time_size
+            nb_block = Node[0].shape[0]
+            block_time_size = Node[0].shape[1]
+            block_space_size = Node[0].shape[2]
+            chunk_size = block_time_size * block_space_size
+            chunk_byte_size = chunk_size
+            #SRATENode = None
+            type = 'raw'
+
+        elif dataset_name == 'Amplitude':
+            Name = '/' + DASName + '/' + SOURCEName + '/' + ZONEName + '/' + 'Amplitude'
+            Node = f[Name]
+            nb_block = Node.shape[0]
+            block_time_size = Node.shape[1]
+            block_space_size = Node.shape[2]
+            chunk_size = block_time_size * block_space_size
+            chunk_byte_size = chunk_size * 4
+            type = 'amplitude'
+
+
+        #
+        # compare chunk size and chunk_cache_size, if too small, increase chunk_cache_size
+        # close file and reopen it with correct cache size
+        #
+        if chunk_byte_size > chunk_cache_size:
+            f.close()
+            chunk_cache_size = chunk_byte_size
+            f = h5py.File(filename, 'r', rdcc_nbytes=chunk_cache_size)
+            print('Febus file: adjusintg cache size to ',chunk_byte_size/1024/1024,' Mbytes')
+        else:
+            print('Febus file: chunk_size is ',chunk_byte_size,' and cache size ',chunk_cache_size)
+            chunk_cache_size_is_ok = True
+
     #
-    # Organisation:    / DAS / SOURCE / ZONE
+    # check time continuity
     #
-    Zone = 1
-
-    # Initialisation
-    # Recuperation des donnees d'enetete, dans les attributs du groupe Source1
-    #
-    DAS = list(f.keys())  # only 1 elemts in this dict.
-    try:
-        DASName = DAS[0]  # 1st key gives name of groupe
-        DASNode = f['/' + DASName]
-    except:
-        raise FileFormatError('File not in <Febus_H5_format> or wrong versions')
-
-    SOURCES = list(DASNode.keys())
-    SOURCEName = SOURCES[0]
-    SOURCENode = f['/' + DASName + '/' + SOURCEName]
-    SrcAttr = SOURCENode.attrs  # it's a dict.
-    ZONEName = 'Zone' + str(Zone)
-    ZONENode = f['/' + DASName + '/' + SOURCEName + '/' + ZONEName]
-    ZneAttr = ZONENode.attrs
-
-    # DAS_name = DASName
-    prf = SrcAttr['PulseRateFreq'] / 1000.
-    try:
-        freq_res = float(SrcAttr['FreqRes'] / 1000.)  # A chunk(block) of data is written @ (Freq_res/1000) Hz
-    except:
-        freq_res = float(SrcAttr['BlockRate'] / 1000.)  # A chunk(block) of data is written @ (BlockRate/1000) Hz
-    # Acquisition_length = SrcAttr['FiberLength']
-    sampling_res = float(SrcAttr['SamplingRes'])
-
-    try:
-        derivation_time = float(ZneAttr['DerivationTime'])
-    except KeyError:
-        derivation_time = None
-
-    #
-    # Space and time origin
-    #
-    Origin = ZneAttr['Origin']
-
-    #
-    # space and time steps
-    #
-    Spacing = ZneAttr['Spacing']
-    dt = Spacing[1] * 1.e-3  # time step in sec (given originally in msec)
-    dx = Spacing[0]  # distance step in m
-
-    try:
-        gauge_length = float(ZneAttr['GaugeLength'])
-    except KeyError:
-        gauge_length = 0.
-
-    TIMEName = 'time'
-    # TIMENode = f['/' + DASName + '/' + SOURCEName + '/' + TIMEName]
-
-    #
-    # block structure and length
-    # Strain Rate or raw data
-    #
-    list_name = list(f['/' + DASName + '/' + SOURCEName + '/' + ZONEName])
-
-    dataset_name = list_name[0]
-
-    if dataset_name == 'Strain':
-        SRATEName = '/' + DASName + '/' + SOURCEName + '/' + ZONEName + '/' + 'Strain'
-        SRATENode = f[SRATEName]
-        nb_block = SRATENode.shape[0]
-        block_time_size = SRATENode.shape[1]
-        block_space_size = SRATENode.shape[2]
-        chunk_size = block_time_size * block_space_size
-        CHANNode = None
-        type = 'strain'
-
-    elif dataset_name == 'StrainRate':
-        SRATEName = '/' + DASName + '/' + SOURCEName + '/' + ZONEName + '/' + 'StrainRate'
-        SRATENode = f[SRATEName]
-        nb_block = SRATENode.shape[0]
-        block_time_size = SRATENode.shape[1]
-        block_space_size = SRATENode.shape[2]
-        chunk_size = block_time_size * block_space_size
-        CHANNode = None
-        type = 'strain-rate'
-
-    elif dataset_name == 'ch1':
-        CHANName = '/' + DASName + '/' + SOURCEName + '/' + ZONEName + '/' + 'ch'
-        CHANNode = [None, None, None, None]
-        for i, j in enumerate(range(0, 4)):
-            CHANNode[i] = f[CHANName + str(i + 1)]
-        # Assume all phases have same dimensions nblock x space_size x time_size
-        nb_block = CHANNode[0].shape[0]
-        block_time_size = CHANNode[0].shape[1]
-        block_space_size = CHANNode[0].shape[2]
-        chunk_size = block_time_size * block_space_size
-        SRATENode = None
-        type = 'raw'
+    if len(block_times) > 1:
+        # compute time lapse between consecutive data block
+        dt_block = np.diff(block_times)
+        # average time between consecutive blocks
+        dt_mean = np.mean(dt_block) #should be freq_res in theory
+        time_errs = np.count_nonzero((dt_block-dt_mean) > __time_err_tol__*dt_mean)
+        if time_errs >0:
+            print('open_febus_file: WARNING: datation error detected on block time. Block lapse time exceeds tolerance')
 
     #
     # Block (chunk) info
     #
-    block_info = {'time_size': block_time_size, 'space_size': block_space_size, 'chunk_size': chunk_size,
-                  'nb_block': nb_block}
+    block_info = {'block_time_size': block_time_size, 'chunk_time_length_in_sec': block_time_size*dt ,'chunk_space_size': block_space_size, 'chunk_size': chunk_size,
+                  'nb_block': nb_block, 'block_times': block_times}
 
     #
     # distance information
@@ -155,28 +212,38 @@ def open_febus_file(filename):
     nspace = block_space_size
     ospace = Origin[0] + Extent[0] * dx
     #dist=np.linspace(ospace,ospace +nspace*dx, nspace)
-    dist = np.arange(0,nspace)*dx + ospace
+    dist = np.arange(0,nspace)*dx
 
     #
     # time information
     #
+    #
+    # !!!! At the time we open the file, we don't know yet how we read it.
+    # - if we read half block, time starts at block_time_size/4*dt
+    # - if we read full block, time starts at 0
+    #
     otime = Origin[1]  # WARNING WARNING actually this is not set in the header, timing could be obtained
+    otime = block_times[0] #placeholder
     # from it,e.g. Posix time of the recording start
+
     # number of time samples assuming that we read with skip option = False
     # The true value of npts will be computed later by A1File._get_time_bounds()
     npts = nb_block * int(block_time_size / 2)
-    #time_info = {'step': dt, 'npts': npts, 'start': otime,
-    #             'end': npts * dt + otime}
-    #time = np.linspace(otime, npts * dt + otime, npts)
-    time = np.arange(0,npts)*dt + otime
+    # time assuming constant time step
+    # time_cst = np.arange(0,npts)*dt + int(block_time_size / 4)*dt
+    # time assuming unevenly time step
+    time = _compute_true_time(nb_block, int(block_time_size / 2), dt, block_times) + int(block_time_size / 4)*dt
+    time -= otime
 
     # create _A1FileHeader instance
-    a1fh = _A1FileHeader(freq_res, block_info, SRATENode, CHANNode, 'febus', f, filename)
+    a1fh = _A1FileHeader(freq_res, block_info, Node, 'febus', f, filename)
 
     # create _A1DataHeader instance
-    a1dh = _A1DataHeader(gauge_length=gauge_length, sampling_res=sampling_res, prf=prf, derivation_time=derivation_time,
-                           type=type, data_axis='time_x_space',dt=dt, time=time, ntime=npts, otime=otime, dx=dx, dist=dist,
-                           nspace=nspace, ospace=ospace, data_type=type)
+    hdr_dict={'gauge_length':gauge_length, 'sampling_res':sampling_res, 'prf':prf, 'derivation_time': derivation_time,
+         'axis1':'time', 'axis2':'space', 'dt':dt, 'ntime':npts, 'otime':otime, 'dx':dx, 'nspace':nspace,
+         'ospace': ospace, 'data_type': type, 'time':time, 'dist':dist }
+
+    a1dh =  _A1DataHeader (hdr=hdr_dict)
 
     return a1fh, a1dh
 
@@ -184,11 +251,11 @@ def open_febus_file(filename):
 #
 # ====================================    READ_FEBUS_FILE()  =======================================
 #
-def read_febus_file(a1, block=None, trange=None, drange=None,  ddecim=1, skip=True, verbose=0, float_type='float64'):
+def read_febus_file(f, block=None, drange=None, trange=None, ddecim=1, skip=True, verbose=0, float_type='float64'):
     """
     This function is supposed to be called from core.read()
 
-    read_febus_file(a1, block=None, trange=None, drange=None,  ddecim=1, skip=True, verbose=0)
+    read_febus_file(f, block=None, trange=None, drange=None,  ddecim=1, skip=True, verbose=0)
 
     Read all or part of a DAS strain[rate] (not raw) file into memory
 
@@ -209,14 +276,19 @@ def read_febus_file(a1, block=None, trange=None, drange=None,  ddecim=1, skip=Tr
       verbose = >= 0
 
     return:
-      _A1DataHeader (class instance), data (numpy 2D ndarray)
+      data_header (_A1DataHeader class instance), data (numpy 2D ndarray)
 
     """
 
     from ._a1das_exception import DataTypeError
 
-    if a1.data_header['data_type'] == 'raw':
-        raise DataTypeError('can only read strain[rate] data')
+    hd = f.file_header
+    block_times = hd.block_info['block_times']
+
+    if f.data_header['data_type'] == 'raw':
+        RAW = True
+    else:
+        RAW = False
 
     if float_type == 'float64':
         npftype = np.float64
@@ -225,7 +297,8 @@ def read_febus_file(a1, block=None, trange=None, drange=None,  ddecim=1, skip=Tr
     else:
         raise DataTypeError('Wrong float type '+ float_type )
 
-    hd = a1.file_header
+    dt = f.data_header['dt']
+
     #
     # read according to block or to trange
 
@@ -233,13 +306,13 @@ def read_febus_file(a1, block=None, trange=None, drange=None,  ddecim=1, skip=Tr
     # indices for first and last time record in the first and last block
     # Vector of times in range[from_time, to_time] with tdecim
     first_block, last_block, step_block, \
-        time_out, block_indices = a1._get_time_bounds(block=block, trange=trange, skip=skip)
+        time_out, block_indices = f._get_time_bounds(block=block, trange=trange, skip=skip)
 
     #
-    #     ---------------------------  compute distance bounds and indices ----------------
+    # ---------------------------  compute distance bounds and indices ----------------
     #
 
-    dist_out, dist_ix, dist_in = a1._get_space_bounds(drange, ddecim)
+    dist_out, dist_ix, dist_in = f._get_space_bounds(drange, ddecim)
 
     #
     # ---------------------------   print summary  -------------------
@@ -256,7 +329,11 @@ def read_febus_file(a1, block=None, trange=None, drange=None,  ddecim=1, skip=Tr
     #
     # --------------------------- loop reading blocks ----------------------
     #
-    data = np.empty((output_time_size, output_space_size), npftype, 'C')
+    if not RAW:
+        data = np.empty((output_time_size, output_space_size), npftype, 'C')
+    else:
+        data = np.empty((4,output_time_size, output_space_size), np.int8, 'C')
+    time = np.empty((output_time_size,))
     offset = 0
     last_block_read = list(range(first_block, last_block, step_block))[-1]
     for i, block in enumerate(range(first_block, last_block, step_block)):
@@ -274,22 +351,39 @@ def read_febus_file(a1, block=None, trange=None, drange=None,  ddecim=1, skip=Tr
             block_start = block_indices[1][0]
             block_end = block_indices[1][1]
 
-        buff = hd.srate_node[block, block_start:block_end, :].astype(float_type)
-        if np.isnan(buff).any():
-            np.nan_to_num(buff,copy=False, nan=0.)
-        block_time_size = buff.shape[0]
+        #read data buffer and sample date
+        if RAW:
+            for i in range(0,4):
+                buff = hd.node[i][block, block_start:block_end, :].astype(float_type)
+                if np.isnan(buff).any():
+                    np.nan_to_num(buff,copy=False, nan=0.)
+                block_time_size = buff.shape[0]
+                data[i,offset: offset + block_time_size, :] = buff[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+        else:
+            buff = hd.node[block, block_start:block_end, :].astype(float_type)
+            if np.isnan(buff).any():
+                np.nan_to_num(buff,copy=False, nan=0.)
+            block_time_size = buff.shape[0]
+            # copy in buff_1 decimated space samples and all time samples
+            data[offset: offset + block_time_size, :] = buff[:, dist_ix.start:dist_ix.stop:dist_ix.step]
 
-        # copy in buff_1 decimated space samples and all time samples
-        data[offset: offset + block_time_size, :] = buff[:, dist_ix.start:dist_ix.stop:dist_ix.step]
+
+        time_buff = np.arange(block_start, block_end) * dt + block_times[block]
+        time[offset: offset + block_time_size] = time_buff
         offset += block_time_size
 
     # initialize data header section with the file data header values
-    data_header = a1.data_header.copy()
+    data_header = f.data_header.copy()
     # adjust time and space values
     data_header.set_item(nspace=len(dist_out))
     data_header.set_item(dist=dist_out)
-    data_header.set_item(ntime=len(time_out))
-    data_header.set_item(time=time_out)
+    if __true_time_policy__ is True:
+        data_header.set_item(ntime=len(time))
+        data_header.set_item(otime=time[0])
+        data_header.set_item(time=time-time[0])
+    else:
+        data_header.set_item(ntime=len(time_out))
+        data_header.set_item(time=time_out)
 
     return data_header, data
 
@@ -321,7 +415,7 @@ def _read_febus_file_block(a1, block=None):
 
     hd = a1.file_header
 
-    buff = hd.srate_node[block, :, :].astype('float32')
+    buff = hd.node[block, :, :].astype('float32')
 
     return  buff
 
@@ -331,3 +425,27 @@ def close_das_file(hd):
 
     """
     hd.fd.close()
+
+def _compute_true_time(nblock, npts, dt, timeb):
+    """
+    compute the time vector for nblock consecutive block of npts samples.
+    Time step between samples is dt, and each block start time is given by timeb[] array
+    """
+    time = np.ndarray((nblock*npts,))
+    brange=np.arange(0,npts)*dt
+    for i in range(0,nblock):
+        time[i*npts:(i+1)*npts] = timeb[i] + brange
+
+    return time
+
+def _set_true_time_policy(policy=True):
+    """
+    see definition in a1das.core.set_true_time_policy()
+    """
+    __true_time_policy__ = policy
+
+def _true_time_policy():
+    """
+    return the status of the true_time_policy
+    """
+    return __true_time_policy__

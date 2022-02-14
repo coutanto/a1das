@@ -206,14 +206,17 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
         a1 = arrayIn
         arrayIn = arrayIn.data
         lag = int(lag/a1.data_header['dt'])
-        if a1.data_header['data_axis'] == 'space_x_time':
-            raise DataTypeError('data das section organized as array of dim [space x time] not yet implemented for x_corr, take transpose first')
+        if a1.data_header['axis1'] == 'space':
+            transposed = True
+            ntime = arrayIn.shape[1]
+        else:
+            transposed = False
+            ntime = arrayIn.shape[0]
         lag_is_second = True
 
     if arrayIn.dtype != np.float64:
         raise DataTypeError('Can only process float64 data type, please convert before calling xcorr')
 
-    ntime = arrayIn.shape[0]
     if lag is None:
         lag = ntime
     lag = int(lag)
@@ -233,7 +236,7 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
         else:
             if (2*lag + 1 > ntime):
                 lag = (ntime-1)/2
-            len = 2*lag+1
+            len = int(2*lag+1)
         lags = np.arange(-lag, lag + 1)
 
     # get the number of correlation to be computed
@@ -253,7 +256,7 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
 
     if (verbose>=2):
         print('signal length is ',arrayIn.shape[0],'FFT length is ',len)
-    xcorr, ijx, ier = _a1xcorPy.a1xcor.compute_xcorr(arrayIn, xcorr, ijx, int(lag), stack)
+    xcorr, ijx, ier = _a1xcorPy.a1xcor.compute_xcorr(arrayIn, xcorr, ijx, int(lag), stack, transposed)
 
     if (verbose>0):
         print('Done')

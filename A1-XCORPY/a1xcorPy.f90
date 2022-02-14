@@ -169,7 +169,7 @@ end subroutine reset_couple
 ! output:
 !   ier= error code
 ! =========================================================
-subroutine compute_xcorr(arrayIn, arrayOut, ijx, lag, stack, ier, m1, m2, n1, n2, nn1, nn2)
+subroutine compute_xcorr(arrayIn, arrayOut, ijx, lag, stack, transposed, ier, m1, m2, n1, n2, nn1, nn2)
 
     use xcorr_mod
     !use iso_fortran_env
@@ -178,7 +178,7 @@ subroutine compute_xcorr(arrayIn, arrayOut, ijx, lag, stack, ier, m1, m2, n1, n2
 !f2py intent(inout, overwrite, c) :: arrayIn
 !f2py intent(in, out, overwrite, c) ::  ijx
 !f2py intent(in, out, overwrite, c) :: arrayOut
-!f2py intent(in) lag, stack
+!f2py intent(in) lag, stack, transposed
 !f2py intent(out) ier
 !f2py integer intent(hide), depend(arrayIn) :: m1=shape(arrayIn,1)   ! m1 is dim 1 in python
 !f2py integer intent(hide), depend(arrayIn) :: m2=shape(arrayIn,0)   ! m2 is dim 0 in python
@@ -189,17 +189,26 @@ subroutine compute_xcorr(arrayIn, arrayOut, ijx, lag, stack, ier, m1, m2, n1, n2
 
     integer, intent(in)    :: m1,m2,n1,n2
     integer, intent(in)    :: lag, stack
+    logical, intent(in)    :: transposed
     integer                :: nn1,nn2
     integer, intent(out)   :: ier
     integer, intent(inout) :: ijx(nn1,nn2)
 
     real(kind=8) :: arrayIn(m1,m2), arrayOut(n1,n2)
+    integer      :: ntime,nspace
 
-!write(0,*) 'arrayOut(a,b)',n1,n2,'ijx(a,b) (2,*)',nn1,nn2
-!write(0,*) 'arrayIn(a,b) (space, time)',m1,m2
-!write(0,*) 'arrayIn',arrayIn(2,1:3)
+write(0,*) 'arrayOut(a,b)',n1,n2,'ijx(a,b) (2,*)',nn1,nn2
+write(0,*) 'arrayIn(a,b) (space, time)',m1,m2
+write(0,*) 'arrayIn',arrayIn(2,1:3)
+write(0,*) 'transposed',transposed
     !write(0,*) 'stack',stack
-    call compute_xcorr_core(arrayIn, m1, m2, n1, lag, stack, arrayOut, nn2, ijx, ier )
+    if (transposed) then
+       ntime=m1; nspace=m2
+    else
+       nspace=m1; ntime=m2
+    endif
+    call compute_xcorr_core(arrayIn, nspace, ntime, n1, lag, stack, arrayOut, nn2, ijx, ier )
+
 
 end subroutine
 end module a1xcor

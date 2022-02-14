@@ -118,7 +118,7 @@ endif
 
 !$OMP DO ORDERED, SCHEDULE(DYNAMIC)
 !   do j=1,ns             ! loop over signals
-   do j=j1+1,j2,jj
+   do j=j1+1,j2,jj        ! loop over time
 #if defined(_OPENMP)
 !    write(0,*) 'running on thread ',omp_get_thread_num()
 #endif

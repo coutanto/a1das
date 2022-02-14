@@ -31,17 +31,21 @@ def rplot(a1, fig=None, cmap='RdBu', vrange=None, splot=(1, 1, 1), title='', dra
         fig = plt.figure(figsize=(18, 9))
 
     transpose = False
-    if a1.data_header['data_axis'] == 'space_x_time':
-        transpose = True
+    if 'data_axis' in a1.data_header.keys(): #old format
+        if a1.data_header['data_axis'] == 'space_x_time':
+            transpose = True
+    if 'axis1' in a1.data_header.keys():
+        if a1.data_header['axis1'] == 'space':
+            transpose = True
 
     dist = a1.data_header['dist']
     time = a1.data_header['time']
     if drange is None:
         d1=0
         if transpose:
-            d2 = a1.data.shape[1]
+            d2 = a1.data.shape[0]
         else:
-            d2=a1.data.shape[0]
+            d2=a1.data.shape[1]
         dmin=dist[0]
         dmax=dist[-1]
     else:
@@ -78,14 +82,18 @@ def rplot(a1, fig=None, cmap='RdBu', vrange=None, splot=(1, 1, 1), title='', dra
         vmax = vrange[1]
 
     ax = plt.subplot(splot[0], splot[1], splot[2])
-    extent = [dmin, dmax, tmax, tmin]
-    if transpose:
-        pos = ax.imshow(a1.data[d1:d2, t1:t2], cmap=cmap, vmin=vmin, vmax=vmax, aspect='auto', extent=extent)
-    else:
-        pos = ax.imshow(a1.data[t1:t2,d1:d2], cmap=cmap, vmin=vmin, vmax=vmax, aspect='auto', extent=extent)
 
-    ax.set_xlabel('distance meters')
-    ax.set_ylabel('time sec')
+    if transpose:
+        extent = [tmin, tmax, dmax, dmin]
+        pos = ax.imshow(a1.data[d1:d2, t1:t2], cmap=cmap, vmin=vmin, vmax=vmax, aspect='auto', extent=extent)
+        ax.set_ylabel('distance meters')
+        ax.set_xlabel('time sec')
+    else:
+        extent = [dmin, dmax, tmax, tmin]
+        pos = ax.imshow(a1.data[t1:t2,d1:d2], cmap=cmap, vmin=vmin, vmax=vmax, aspect='auto', extent=extent)
+        ax.set_xlabel('distance meters')
+        ax.set_ylabel('time sec')
+
     ax.set_title('section DAS ' + title)
     fig.colorbar(pos)
 
@@ -93,7 +101,8 @@ def rplot(a1, fig=None, cmap='RdBu', vrange=None, splot=(1, 1, 1), title='', dra
 #
 # ====================================    PLOT()  =======================================
 #
-def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, variable_area=False, drange=None, trange=None, redraw=None):
+def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, by_trace=False, variable_area=False,
+         drange=None, trange=None, redraw=None):
     """
     plot a DAS section as curves
     ----------------------------
@@ -103,6 +112,7 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
     amax  = maximum amplitude that is clipped (default=None)
     splot = subplot position (default=(1,1,1))
     max=  = max number of trace per plot along distance dimension (default=100)
+    by_trace = (bool) normalize by plot (False) or by trace (True) (default=False)
     variable_area = variable area plot, positive wiggles are filled (default=False)
     drange= distance range
     trange= time range
@@ -111,7 +121,7 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
 
     import numpy as np
     import matplotlib.dates as mdates
-    import datetime as dt
+    from datetime import datetime, timezone
 
     if fig is None:
         fig = plt.figure(figsize=(18, 9))
@@ -127,10 +137,16 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
 
     dist = a1['dist']
     time = a1['time'] + a1['otime']
+    otime, otimes = a1.otime()
 
     transpose = False
-    if a1.data_header['data_axis'] == 'space_x_time':
-        transpose = True
+    if 'data_axis' in a1.data_header.keys(): #old format
+        if a1.data_header['data_axis'] == 'space_x_time':
+            transpose = True
+    if 'axis1' in a1.data_header.keys():
+        if a1.data_header['axis1'] == 'space':
+            transpose = True
+
 
     if drange is None:
         d1=0
@@ -154,16 +170,13 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
             t2 = a1.data.shape[1]
         else:
             t2=a1.data.shape[0]
-        #tmin = time[0]
-        #tmax = time[-1]
+
     else:
         tmin=trange[0]
         tmax=trange[1]
         t1=np.nanargmin(np.abs(time-tmin - a1['otime']))
         t2=np.nanargmin(np.abs(time-tmax - a1['otime']))
 
-    #from_distance = a1.dist[0]
-    #to_distance = a1.dist[-1]
     from_distance = dmin
     to_distance = dmax
 
@@ -202,15 +215,20 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
         gain = 1
 
     # compute the width, trace offset, and gain
-
-
-    dates =[dt.datetime.fromtimestamp(ts) for ts in time[t1:t2]]
+    dates =[datetime.fromtimestamp(ts, tz=timezone.utc) for ts in time[t1:t2]]
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S.%f'))
     for i in range(0, len(idrange)):
         if transpose:
             v = a1.data[idrange[i], t1:t2].copy()
         else:
             v = a1.data[t1:t2, idrange[i]].copy()
+        if by_trace:
+            max_val = np.max(v)
+            v = v /max_val*max_value
+            #if not amax:
+            #    clipped_value = max_val * clip
+            #else:
+            #    clipped_value = amax
         v[v > clipped_value] = clipped_value
         v[v < -clipped_value] = -clipped_value
         v = v + offset[i]
@@ -237,7 +255,7 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
     if not redraw:
         ax.set_xlabel('time sec')
         ax.set_ylabel('distance m')
-        ax.set_title('section DAS ' + title)
+        ax.set_title('section DAS, start_time= ' + otimes + title)
 
 
     return fig, lines

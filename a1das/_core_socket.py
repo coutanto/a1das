@@ -19,7 +19,7 @@ def open_das_socket(socket_name):
         _A1SocketHeader, _A1DataHeader
     """
     import zmq
-    from .core import _A1SocketHeader, _A1DataHeader
+    from ._a1headers import _A1SocketHeader, _A1DataHeader
     from ._a1das_exception import ZMQSocketError, DataTypeError
     import numpy as np
     import array
@@ -74,7 +74,6 @@ def open_das_socket(socket_name):
     DATA2 = array.array(idata_type, message2[48:64])
     nspace = DATA2[1]-DATA2[0] + 1
     ntime = DATA2[3]-DATA2[2] + 1
-
     dist = (np.arange(0, nspace) * dx + ospace)
     time = np.arange(int(ntime/4),3*int(ntime/4)) * dt
     used_ntime = int(ntime/2)
@@ -90,15 +89,18 @@ def open_das_socket(socket_name):
     if type != 'strainrate':
         raise DataTypeError('socket only support strain rate type')
 
-    dhd = _A1DataHeader(data_axis="time_x_space", type=type, dt=dt, ntime=used_ntime, otime=otime, dx=dx, nspace = nspace,
-                                     ospace=ospace, dist=dist, time=time)
+
+    hdr_dict = {'axis1': "time", 'axis2': "space", 'data_type': type, 'dt': dt, 'ntime': used_ntime, 'otime': otime, \
+                'dx': dx, 'nspace': nspace, 'ospace': ospace, 'dist': dist, 'time':time,
+                'gauge_length': 0., 'sampling_res':0., 'prf':0. }
+
+    dhd = _A1DataHeader(hdr = hdr_dict)
     shd = _A1SocketHeader(socket=socket,  socket_name=socket_name, time_stamp=time_stamp, running_time=0.)
 
     return shd, dhd
 
-def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
+def read_das_socket(a1, block=None, drange=None, ddecim=None):
     """
-
     Read the data from the DAS socket following ZMQ protocol
     Data are read by block(s), the number of block read and stored
     in the data buffer is specified by the <block> argument
@@ -110,23 +112,18 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
                 [k,l] => read l-k block
                 [k]   => read k blocks
                 default is None, read 1 block
-        drange = in meter, refer to distance along fiber
+        drange = (list/tuple) in meter, refer to distance along fiber
                 [dist, dist]         => keep 1 trace at distance dist
                 [distmin, distmax]   => keep distances in the range
-                [d1, d2, d3, ... dN] => keep selected discrete distance
                 default is None, keep all distances
-        idrange = same as drange but given as index values
-                [i, i]
-                [imin, imax]
-                [i1, i2, ..., iN]
+        or drange = (range) gives range of index values range(i,j)
         ddecim = 1 (default) or decimate
 
     return:
         an A1Section class instance containing header and data
     TODO implementer ddecim
     """
-    import zmq
-    import numpy as np
+    from numpy import nanargmin, double, reshape, empty, arange
     import array
     from ._a1das_exception import ZMQSocketError, DataTypeError
     from sys import platform
@@ -134,6 +131,7 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
 
     hd = a1.socket_header
     dhd = a1.data_header.copy()
+    dist = dhd['dist']
     if hd is None:
         raise ZMQSocketError("socket not opened; open first before reading")
 
@@ -150,11 +148,20 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
         nblock = block[1]-block[0]
 
     # select distance index
-    if drange is not None:
-        idrange = dhd.index(drange)
-        idrange[1] += 1
+    if drange is None:
+        idrange=[0, len(dist)]
 
+    elif isinstance(drange,range):
+        l=list(range)
+        idrange=[l[0], l[-1]]
 
+    elif isinstance(drange,tuple) or isinstance(drange,list):
+        idrange=[]
+        idrange[0] = nanargmin(abs(dist - drange[0]))
+        if len(drange) == 1:
+            idrange[1] = idrange[0] + 1
+        else:
+            idrange[1] = nanargmin(abs(dist - drange[1])) + 1
 
     # windows/linux settings
     if platform == 'linux' or platform == 'darwin':
@@ -164,7 +171,7 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
 
     # send ACQ
     try:
-        hd.socket.send(np.double(0))
+        hd.socket.send(double(0))
     except:
         raise ZMQSocketError("cannot send ACQ to "+hd.socketname+" socket")
 
@@ -184,8 +191,9 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
     count = DATA1[0]
     DATA1 = array.array('d', message1[4::])
     new_time_stamp = DATA1[0]
-    DATA2 = array.array('d', message2[48:64])
-    ntime = DATA2[1]-DATA2[0]
+    DATA2 = array.array(idata_type, message2[48:64])
+    ntime = DATA2[3]-DATA2[2]+1
+
     #print('first block', count, new_time_stamp, hd.time_stamp)
     if count==4:
         type='raw'
@@ -208,7 +216,7 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
     old_time_stamp = hd.time_stamp
     while new_time_stamp == old_time_stamp:
         try:
-            hd.socket.send(np.double(0))
+            hd.socket.send(double(0))
             message1 = hd.socket.recv()
             message2 = hd.socket.recv()
             message3 = hd.socket.recv()
@@ -222,6 +230,7 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
     DATA2 = array.array(idata_type, message2[48:64])
     nspace = DATA2[1]-DATA2[0] + 1
     ntime = DATA2[3]-DATA2[2] + 1
+
     if ntime != block_time_size or nspace != block_space_size:
         print('ntime=',ntime,'block_time_size=',block_time_size,'nspace=',nspace,'bss=',block_space_size)
         raise ZMQSocketError("inconsistent block size with respect to previous read")
@@ -230,7 +239,7 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
     # build ndarray data block
     #
     DATA3 = array.array('f', message3)
-    StrainRate = np.reshape(DATA3, (ntime, nspace))
+    StrainRate = reshape(DATA3, (ntime, nspace))
     used_ntime = int(ntime/2)
     bs4 = int(ntime/4)
     if idrange is None:
@@ -239,7 +248,7 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
         mspace = len(range(idrange[0],idrange[1]))
     else:
         mspace = len(idrange)
-    data = np.empty((used_ntime*nblock, mspace))
+    data = empty((used_ntime*nblock, mspace))
 
     if idrange is None:
         data[0:used_ntime,:]  = StrainRate[bs4:3*bs4, :]
@@ -255,7 +264,7 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
         # read updated block
         while new_time_stamp == a1.socket_header.time_stamp:
             try:
-                hd.socket.send(np.double(0))
+                hd.socket.send(double(0))
                 message1 = hd.socket.recv()
                 message2 = hd.socket.recv()
                 message3 = hd.socket.recv()
@@ -276,7 +285,7 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
         # build ndarray data block
         #
         DATA3 = array.array('f', message3)
-        StrainRate = np.reshape(DATA3, (ntime, nspace))
+        StrainRate = reshape(DATA3, (ntime, nspace))
         if idrange is None:
             data[i*used_ntime : (i+1)*used_ntime, :] = StrainRate[bs4:3*bs4, :]
         elif len(idrange) == 2:
@@ -286,9 +295,9 @@ def read_das_socket(a1, block=None, drange=None, idrange=None, ddecim=1):
 
     dhd.set_item(ntime=nblock * used_ntime)
     dhd.set_item(nspace=mspace)
-    time = dhd['dt']*np.arange(bs4, 2*bs4*nblock + bs4) + new_time_stamp
-    dhd.set_item(time = time)
+    time = dhd['dt']*arange(bs4, 2*bs4*nblock + bs4) + new_time_stamp
     dhd.set_item(otime=time[0])
+    dhd.set_item(time=time-time[0])
 
     return dhd, data
 

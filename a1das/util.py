@@ -7,14 +7,14 @@ def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
     Save (or append) fiber location information to a h5 file by adding/replacing the group "/location"
     and adding/replacing attributes.
 
-    content of the group /location
-    datasets:
-    /location/position (x,y,z)
-    /location/trace    trace_index
-    /location/dist     curvilinear abscissa
-    attributes:
-    crs: coordinate reference system
-    pos_label: (x,y,z) labels
+        content of the group /location:
+        datasets:
+        /location/position (x,y,z)
+        /location/trace    trace_index
+        /location/dist     curvilinear abscissa
+        attributes:
+        crs: coordinate reference system
+        pos_label: (x,y,z) labels
 
     ## Input
         filename: (string) file to store location information. If data_filename is not defined, it is assumed to
@@ -89,7 +89,7 @@ def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
 def read_location_from_h5(filename):
     """
     ## Description
-    Read position information from a h5 file (febus or reducted)
+    Read fiber location information from a h5 file
 
     ## Return
         positions: ndarray of size 3 x ntrace
@@ -187,7 +187,7 @@ def save_location_as_gpkg(fileout, position, dist, trace, crs):
 def read_location_from_gpkg(file):
     """
     ##Description
-    Read a fiber path from a gpkg file, supposedly in UTM coordinate
+    Read fiber location information from a .gpkg (geopackage) file
 
     ##Return
     position: a numpy ndarray of size [3 x npoints] or [2 x npoints] if elevation is not known

@@ -101,7 +101,7 @@ class A1File:
     def is_transposed(self):
         """
         ## Description
-        Only relevant for "reducted" format. Return True if the data are transposed from the original Febus format.
+        Only relevant for 'reducted' format. Return True if the data are transposed from the original Febus format.
 
         Transposed =  the data array is stored as data[nspace, ntime],
 
@@ -527,8 +527,11 @@ class A1File:
         :param drange: extract positions from from_to_position[0] to from_to_position[1], if not used set to None
         :param ddecim: space decimation step, if not used set to 1
 
-        :return: distance_fiber_out, distance_indices, distance_fiber_in
-                 distance_vector selected, array of distance indices in the input distance_vector
+        :return:
+        distance_fiber_out: vector of distances requested by drange and decime arguments
+        distance_indices:   range of indices to build distance_fiber_out
+        distance_fiber_in:  original vector of distances
+
         '''
         from numpy import linspace, nanargmin
 
@@ -838,7 +841,7 @@ class A1Section:
         trange = (list or tuple) [unique_time]; [time_min, time_max]; [t1, t2, ... tN]  (default = None, take all)
 
         ## Return
-        A list of indices that matches the given range in the A1Section.data_header['dist'] or
+        A list of indices that match the given range in the A1Section.data_header['dist'] or
         A1Section.data_header['time'] vectors
 
         ## Usage example
@@ -991,7 +994,7 @@ class A1Section:
         data_header = self.data_header.copy()
         data_header.set_item(ntime=self['ntime']+b['ntime'])
         data_header.set_item(time=np.concatenate((time_a,time_b)))
-        newdata = np.vstack((self.data, b.data))
+        newdata = np.hstack((self.data, b.data))
 
         return A1Section(data_header, newdata)
 

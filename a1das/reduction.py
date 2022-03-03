@@ -254,7 +254,7 @@ def reduction_transpose(filein, fileout, trange=None, drange=None, tdecim=1, dde
     # --------------------------- loop reading blocks ----------------------
     #
     time = np.empty((output_time_size,))
-    buff_out = np.empty((input_space_size, out_chunk_time_size), np.float32, 'C')
+    buff_out = np.empty((output_space_size, out_chunk_time_size), np.float32, 'C') #modifOC input_space_size=>ouput_space_size
     time_offset = 0 #incremented by output chunk
     time_offset2 = 0 #incremented by input chunk
     last_block_read = list(range(first_block, last_block, step_block))[-1]
@@ -296,7 +296,7 @@ def reduction_transpose(filein, fileout, trange=None, drange=None, tdecim=1, dde
 
         # transpose data, copy is necessary to make sure
         # that the array is transposed in memory
-        buff_trans = np.transpose(buff_in).copy()
+        buff_trans = np.transpose(buff_in[:,dist_ix]).copy() #modifOC buff_in => buff_in[:,dist_ix]
 
         # increment output buffer block counter
         jchunk = i % ncblock

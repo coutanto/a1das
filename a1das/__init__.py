@@ -19,7 +19,7 @@
 #
 # a1das version 2.0.0
 
-__all__=["core", "reduction", "xcor", "util", "_plot.py", "_raw2strPy", "_a1das_exception.py", "_core_reducted_file.py",
+__all__=["core", "reduction", "xcor", "util", "_plot.py", "_a1das_exception.py", "_core_reducted_file.py",
          "_a1xcorPy", "_sosfilterPy", "_core_febus_file.py", "vserver"]
 #
 # from a1das import *
@@ -41,6 +41,5 @@ from . import _core_febus_file
 from . import _core_reducted_file
 from . import _core_socket
 from . import _a1xcorPy
-from . import _raw2strPy
 from . import _sosfilterPy
 from . import _plot

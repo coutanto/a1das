@@ -307,11 +307,9 @@ def _save_reducted_file(a1, filename, chunk_space_size = None):
         chunk_time_size = ntime
         if chunk_space_size is None:
             chunk_space_size = int(nspace/10)
-        section_list = _create_h5_group_transposed_by_section(fout, nspace, ntime, chunk_time_size, chunk_space_size,
+        dset = _create_h5_group_transposed_by_section(fout, nspace, ntime, chunk_time_size, chunk_space_size,
                                                               compression=False)
-        for i in range(0,nspace):
-            dset = section_list[i]
-            dset[:] = a1.data[i,:]
+        dset[:,:] = a1.data[:,:]
 
     else:
         chunk_time_size = min(8192,int(ntime/10))

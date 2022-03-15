@@ -186,6 +186,7 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
     """
     from a1das import _a1xcorPy, A1Section
     from a1das._a1das_exception import DataTypeError
+    from numpy import ndarray
 
     #
     # determine the cross-correlation length depending on lag and parity of signal length
@@ -213,9 +214,13 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
             transposed = False
             ntime = arrayIn.shape[0]
         lag_is_second = True
-
-    if arrayIn.dtype != np.float64:
-        raise DataTypeError('Can only process float64 data type, please convert before calling xcorr')
+        if arrayIn.dtype != np.float64:
+            raise DataTypeError('Can only process float64 data type, please convert before calling xcorr')
+    elif isinstance(arrayIn, ndarray):
+        ntime = arrayIn.shape[0]
+        transposed = False
+    else:
+        raise DataTypeError('Data array must be an A1Section or a numpy ndarray (ntime x nspace)')
 
     if lag is None:
         lag = ntime

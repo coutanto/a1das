@@ -136,6 +136,7 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
         lines={}
 
     dist = a1['dist']
+    dx = a1['dx']
     time = a1['time'] + a1['otime']
     otime, otimes = a1.otime()
 
@@ -209,8 +210,8 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
     width = 2 * clipped_value * ntraces
     if width == 0.:
         width = 1.
-    offset = np.arange(0, ntraces + 1) * 2 * clipped_value
-    gain = (to_distance - from_distance) / width
+    offset = np.arange(0, ntraces) * 2 * clipped_value #ntraces+1?
+    gain = (to_distance - from_distance + dx) / width
     if gain == 0:
         gain = 1
 
@@ -255,8 +256,10 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
     if not redraw:
         ax.set_xlabel('time sec')
         ax.set_ylabel('distance m')
+        #ax.set_title('section DAS, start_time= ' + otimes + title)
+        otime = time[t1]
+        otimes = datetime.fromtimestamp(otime, tz=timezone.utc).strftime('%Y:%m:%d-%H:%M:%S.%f')
         ax.set_title('section DAS, start_time= ' + otimes + title)
-
 
     return fig, lines
 

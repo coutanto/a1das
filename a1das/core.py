@@ -777,8 +777,8 @@ class A1Section:
         time = self['time']
         otime += time[0]
         time -= time[0]
-        self.set_item(otime=otime)
-        self.set_item(time=time)
+        self.data_header.set_item(otime=otime)
+        self.data_header.set_item(time=time)
 
     #
     # ====================================   OBSPY_STREAM()  =======================================
@@ -1175,4 +1175,20 @@ def __myprint__(x):
     print(x)
 
 
+def utime(str, format="%Y:%m:%d-%H:%M:%S"):
+    """
+    ## Description
+    Return Posix UTC time from a date string of the form YYYY:MM:DD-hr:mn:ss.sss (default)
+    ## Input
+    str: string, date
+    format: string, optional, date format, default="%Y:%m:%d-%H:%M:%S"
+    ## Return
+    Posix time
+    """
+    from datetime import timezone, datetime
+    from ._a1das_exception import WrongValueError
 
+    d = datetime.strptime(str, format)
+    dd = datetime(d.year, d.month, d.day, d.hour, d.minute, d.second, tzinfo=timezone.utc)
+    # convert to Posix
+    return dd.timestamp()

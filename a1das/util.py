@@ -1,7 +1,7 @@
 __doc__="Various tools to manipulate das data"
 
 
-def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
+def save_location_as_h5(filename, position, dist, trace, crs, pos_label, tgte=None):
     """
     ## Description
     Save (or append) fiber location information to a h5 file by adding/replacing the group "/location"
@@ -15,6 +15,7 @@ def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
         attributes:
         crs: coordinate reference system
         pos_label: (x,y,z) labels
+        tgte: optional, tangent vector in 3D space
 
     ## Input
         filename: (string) file to store location information. If data_filename is not defined, it is assumed to
@@ -68,6 +69,13 @@ def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
         dist_dset.resize((npos,))
         trace_dset = g['trace']
         trace_dset.resize((npos,))
+        if tgte is not None:
+            try:
+                tgte_dset = g['tgte']
+                tgte_dset.resize((3,npos))
+                tgte_dset = tgte
+            except:
+                tgte_dset = g.create_dataset("tgte", data=tgte, maxshape=(3, None))
 
         loc_dset[::] = position
         dist_dset[:] = dist
@@ -79,6 +87,8 @@ def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
         loc_dset = g.create_dataset("position", data=position, maxshape=(3,None))
         dist_dset = g.create_dataset("distance", data=dist, maxshape=(None,))
         trace_dset = g.create_dataset("trace", data=trace, maxshape=(None,), dtype='int32')
+        if tgte is not None:
+            tgte_dset = g.create_dataset("tgte", data=tgte, maxshape=(3,None))
         loc_attr = g.attrs
 
     loc_attr['crs'] = crs
@@ -92,7 +102,10 @@ def read_location_from_h5(filename):
     Read fiber location information from a h5 file
 
     ## Return
-        positions: ndarray of size 3 x ntrace
+        positions: ndarray of size 3 x ntrace (x,y,z for each trace)
+        dist: ndarray of size ntrace          (curvilinear distance for each trace)
+        trace: ndarray of size ntrace         (trace index)
+        tgte: (optional) ndarray of size 3 x ntrace (tangent vector to the fiber)
         crs= (str) reference coordinate system
         pos_label= (tuple of str) labels for the 3 positions ('x','y','z') or ('lat','lon','elev') or ...
     """
@@ -107,12 +120,19 @@ def read_location_from_h5(filename):
         pos_label = g.attrs['pos_label']
         position = g['position'][::]
         dist = g['distance'][:]
-        trace = g['trace']
+        trace = g['trace'][:]
+        try:
+            tgte = g['tgte'][::]
+        except:
+            tgte = None
     except:
         raise FileFormatError('file '+filename+'does not contain a location group')
 
     f.close()
-    return position, dist, trace, crs, pos_label
+    if tgte is None:
+        return position, dist, trace, crs, pos_label
+    else:
+        return position, dist, trace, tgte, crs, pos_label
 
 def save_location_as_wkt(fileout, positions, crs, distance=None):
     """
@@ -150,7 +170,7 @@ def save_location_as_wkt(fileout, positions, crs, distance=None):
                 print('\"POINT Z (%.2f %.2f %.2f)\",\"%d\"' % (positions[0,i],positions[1,i],positions[2,i],i), file=f)
 
 
-def save_location_as_gpkg(fileout, position, dist, trace, crs):
+def save_location_as_gpkg(fileout, position, dist, trace, crs, tgte = None):
     """
     ## Description
     Save fiber location information using the geo-package format (.gpkg) which can be directly imported into QGIS.
@@ -160,6 +180,7 @@ def save_location_as_gpkg(fileout, position, dist, trace, crs):
     dist:  (ndarray, float) [nspace] curvilinear abscissa
     trace: (ndarray, int) [nspace] trace index
     crs: (str) coordinate reference system in the standard form 'epgs:####'
+    tgte: optional,(ndarray, float) [3 x nspace]; tangent vector to the fiber
     """
     import geopandas as gpd
     from shapely.geometry import point
@@ -180,7 +201,13 @@ def save_location_as_gpkg(fileout, position, dist, trace, crs):
 
     filename=[ None for d in dist]
     geometry = gpd.points_from_xy(position[0,:], position[1,:],position[2,:])
-    gdf=gpd.GeoDataFrame(data={'curvilinear_abscissa':dist, 'trace':trace, 'filename':filename,
+    if tgte is None:
+        gdf=gpd.GeoDataFrame(data={'curvilinear_abscissa':dist, 'trace':trace, 'filename':filename,
+                                   'geometry':geometry}, crs = crs)
+    else:
+        gdf=gpd.GeoDataFrame(data={'curvilinear_abscissa':dist, 'trace':trace,
+                                   'tgtx':tgte[0,:],'tgty':tgte[1,:],'tgtz':tgte[2,:],
+                                   'filename':filename,
                                    'geometry':geometry}, crs = crs)
     gdf.to_file(fileout+'.gpkg', driver='GPKG')
 
@@ -214,5 +241,51 @@ def read_location_from_gpkg(file):
         return path_xyz, gdf.crs.srs
 
 
+def dt_morlet(sig1, sig2, wlen, freq):
+    """
+    ## Description
+    Compute time shift between sig1 and sig2 using a moving projection on morlet wavelet transform
 
+    ## Input
+    ----------
+    sig1 : ndarray, first signal input
+    sig2 : ndarray, second signal input
+    wlen : int, window length.
+    freq : float or 3 elements float list, frequency bandwidth of morlet ex: f; or [f1,f2] or [fmin, fmax, df]
+
+    ## Returns
+    dt: ndarray(nfreq, ntime), float, time shift vector (=phase / omega)
+    ws1, ws2: ndarray(nfreq, ntime), complex, projection on Morlet wavelet
+    """
+    from scipy.signal import morlet, correlate
+    from numpy import arange, asarray, pi, angle, ndarray, unwrap, dot, sqrt
+    
+    #
+    # set frequency range
+    #
+    if isinstance (freq, float):
+        freq = asarray([freq])
+    if (len(freq)==2):
+        freq = asarray(freq)
+    if len(freq)==3:
+        freq = arange(freq[0],freq[1]+freq[2],freq[2])
+
+    #
+    # initialize  output array
+    #
+    dt = ndarray((len(freq),len(sig1)))
+    ws1 = ndarray((len(freq),len(sig1)),dtype=complex)
+    ws2 = ndarray((len(freq),len(sig2)),dtype=complex)
+    for i,f in enumerate(freq):
+        omega = 2*pi*f
+        wm = morlet(wlen, omega)
+        norm =  sqrt(sum(abs(wm)**2))
+        wm = wm/norm
+        ws1[i,:] = correlate(sig1, wm, mode='same')
+        ws2[i,:] = correlate(sig2, wm, mode='same')
+        dt[i,:] = unwrap(angle(ws2[i,:])-angle(ws1[i,:]))/omega
+
+        
+    return freq, dt, ws1, ws2
+        
 

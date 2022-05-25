@@ -30,20 +30,21 @@
 <pre><code class="python">__doc__=&#34;Various tools to manipulate das data&#34;
 
 
-def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
+def save_location_as_h5(filename, position, dist, trace, crs, pos_label, tgte=None):
     &#34;&#34;&#34;
     ## Description
     Save (or append) fiber location information to a h5 file by adding/replacing the group &#34;/location&#34;
     and adding/replacing attributes.
 
-    content of the group /location
-    datasets:
-    /location/position (x,y,z)
-    /location/trace    trace_index
-    /location/dist     curvilinear abscissa
-    attributes:
-    crs: coordinate reference system
-    pos_label: (x,y,z) labels
+        content of the group /location:
+        datasets:
+        /location/position (x,y,z)
+        /location/trace    trace_index
+        /location/dist     curvilinear abscissa
+        attributes:
+        crs: coordinate reference system
+        pos_label: (x,y,z) labels
+        tgte: optional, tangent vector in 3D space
 
     ## Input
         filename: (string) file to store location information. If data_filename is not defined, it is assumed to
@@ -97,6 +98,13 @@ def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
         dist_dset.resize((npos,))
         trace_dset = g[&#39;trace&#39;]
         trace_dset.resize((npos,))
+        if tgte is not None:
+            try:
+                tgte_dset = g[&#39;tgte&#39;]
+                tgte_dset.resize((3,npos))
+                tgte_dset = tgte
+            except:
+                tgte_dset = g.create_dataset(&#34;tgte&#34;, data=tgte, maxshape=(3, None))
 
         loc_dset[::] = position
         dist_dset[:] = dist
@@ -108,6 +116,8 @@ def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
         loc_dset = g.create_dataset(&#34;position&#34;, data=position, maxshape=(3,None))
         dist_dset = g.create_dataset(&#34;distance&#34;, data=dist, maxshape=(None,))
         trace_dset = g.create_dataset(&#34;trace&#34;, data=trace, maxshape=(None,), dtype=&#39;int32&#39;)
+        if tgte is not None:
+            tgte_dset = g.create_dataset(&#34;tgte&#34;, data=tgte, maxshape=(3,None))
         loc_attr = g.attrs
 
     loc_attr[&#39;crs&#39;] = crs
@@ -118,10 +128,13 @@ def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
 def read_location_from_h5(filename):
     &#34;&#34;&#34;
     ## Description
-    Read position information from a h5 file (febus or reducted)
+    Read fiber location information from a h5 file
 
     ## Return
-        positions: ndarray of size 3 x ntrace
+        positions: ndarray of size 3 x ntrace (x,y,z for each trace)
+        dist: ndarray of size ntrace          (curvilinear distance for each trace)
+        trace: ndarray of size ntrace         (trace index)
+        tgte: (optional) ndarray of size 3 x ntrace (tangent vector to the fiber)
         crs= (str) reference coordinate system
         pos_label= (tuple of str) labels for the 3 positions (&#39;x&#39;,&#39;y&#39;,&#39;z&#39;) or (&#39;lat&#39;,&#39;lon&#39;,&#39;elev&#39;) or ...
     &#34;&#34;&#34;
@@ -136,12 +149,19 @@ def read_location_from_h5(filename):
         pos_label = g.attrs[&#39;pos_label&#39;]
         position = g[&#39;position&#39;][::]
         dist = g[&#39;distance&#39;][:]
-        trace = g[&#39;trace&#39;]
+        trace = g[&#39;trace&#39;][:]
+        try:
+            tgte = g[&#39;tgte&#39;][::]
+        except:
+            tgte = None
     except:
         raise FileFormatError(&#39;file &#39;+filename+&#39;does not contain a location group&#39;)
 
     f.close()
-    return position, dist, trace, crs, pos_label
+    if tgte is None:
+        return position, dist, trace, crs, pos_label
+    else:
+        return position, dist, trace, tgte, crs, pos_label
 
 def save_location_as_wkt(fileout, positions, crs, distance=None):
     &#34;&#34;&#34;
@@ -179,7 +199,7 @@ def save_location_as_wkt(fileout, positions, crs, distance=None):
                 print(&#39;\&#34;POINT Z (%.2f %.2f %.2f)\&#34;,\&#34;%d\&#34;&#39; % (positions[0,i],positions[1,i],positions[2,i],i), file=f)
 
 
-def save_location_as_gpkg(fileout, position, dist, trace, crs):
+def save_location_as_gpkg(fileout, position, dist, trace, crs, tgte = None):
     &#34;&#34;&#34;
     ## Description
     Save fiber location information using the geo-package format (.gpkg) which can be directly imported into QGIS.
@@ -189,6 +209,7 @@ def save_location_as_gpkg(fileout, position, dist, trace, crs):
     dist:  (ndarray, float) [nspace] curvilinear abscissa
     trace: (ndarray, int) [nspace] trace index
     crs: (str) coordinate reference system in the standard form &#39;epgs:####&#39;
+    tgte: optional,(ndarray, float) [3 x nspace]; tangent vector to the fiber
     &#34;&#34;&#34;
     import geopandas as gpd
     from shapely.geometry import point
@@ -209,14 +230,20 @@ def save_location_as_gpkg(fileout, position, dist, trace, crs):
 
     filename=[ None for d in dist]
     geometry = gpd.points_from_xy(position[0,:], position[1,:],position[2,:])
-    gdf=gpd.GeoDataFrame(data={&#39;curvilinear_abscissa&#39;:dist, &#39;trace&#39;:trace, &#39;filename&#39;:filename,
+    if tgte is None:
+        gdf=gpd.GeoDataFrame(data={&#39;curvilinear_abscissa&#39;:dist, &#39;trace&#39;:trace, &#39;filename&#39;:filename,
+                                   &#39;geometry&#39;:geometry}, crs = crs)
+    else:
+        gdf=gpd.GeoDataFrame(data={&#39;curvilinear_abscissa&#39;:dist, &#39;trace&#39;:trace,
+                                   &#39;tgtx&#39;:tgte[0,:],&#39;tgty&#39;:tgte[1,:],&#39;tgtz&#39;:tgte[2,:],
+                                   &#39;filename&#39;:filename,
                                    &#39;geometry&#39;:geometry}, crs = crs)
     gdf.to_file(fileout+&#39;.gpkg&#39;, driver=&#39;GPKG&#39;)
 
 def read_location_from_gpkg(file):
     &#34;&#34;&#34;
     ##Description
-    Read a fiber path from a gpkg file, supposedly in UTM coordinate
+    Read fiber location information from a .gpkg (geopackage) file
 
     ##Return
     position: a numpy ndarray of size [3 x npoints] or [2 x npoints] if elevation is not known
@@ -240,7 +267,56 @@ def read_location_from_gpkg(file):
         #path_xyz = asarray(path_geom).T
         #or
         path_xyz = asarray([g.coords for g in  gdf.geometry]).squeeze().T
-        return path_xyz, gdf.crs.srs</code></pre>
+        return path_xyz, gdf.crs.srs
+
+
+def dt_morlet(sig1, sig2, wlen, freq):
+    &#34;&#34;&#34;
+    ## Description
+    Compute time shift between sig1 and sig2 using a moving projection on morlet wavelet transform
+
+    ## Input
+    ----------
+    sig1 : ndarray, first signal input
+    sig2 : ndarray, second signal input
+    wlen : int, window length.
+    freq : float or 3 elements float list, frequency bandwidth of morlet ex: f; or [f1,f2] or [fmin, fmax, df]
+
+    ## Returns
+    dt: ndarray(nfreq, ntime), float, time shift vector (=phase / omega)
+    ws1, ws2: ndarray(nfreq, ntime), complex, projection on Morlet wavelet
+    &#34;&#34;&#34;
+    from scipy.signal import morlet, correlate
+    from numpy import arange, asarray, pi, angle, ndarray, unwrap, dot, sqrt
+    
+    #
+    # set frequency range
+    #
+    if isinstance (freq, float):
+        freq = asarray([freq])
+    if (len(freq)==2):
+        freq = asarray(freq)
+    if len(freq)==3:
+        freq = arange(freq[0],freq[1]+freq[2],freq[2])
+
+    #
+    # initialize  output array
+    #
+    dt = ndarray((len(freq),len(sig1)))
+    ws1 = ndarray((len(freq),len(sig1)),dtype=complex)
+    ws2 = ndarray((len(freq),len(sig2)),dtype=complex)
+    for i,f in enumerate(freq):
+        omega = 2*pi*f
+        wm = morlet(wlen, omega)
+        norm =  sqrt(sum(abs(wm)**2))
+        wm = wm/norm
+        ws1[i,:] = correlate(sig1, wm, mode=&#39;same&#39;)
+        ws2[i,:] = correlate(sig2, wm, mode=&#39;same&#39;)
+        dt[i,:] = unwrap(angle(ws2[i,:])-angle(ws1[i,:]))/omega
+
+        
+    return freq, dt, ws1, ws2
+        </code></pre>
 </details>
 </section>
 <section>
@@ -250,12 +326,79 @@ def read_location_from_gpkg(file):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="a1das.util.dt_morlet"><code class="name flex">
+<span>def <span class="ident">dt_morlet</span></span>(<span>sig1, sig2, wlen, freq)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="description">Description</h2>
+<p>Compute time shift between sig1 and sig2 using a moving projection on morlet wavelet transform</p>
+<h2 id="input">Input</h2>
+<hr>
+<p>sig1 : ndarray, first signal input
+sig2 : ndarray, second signal input
+wlen : int, window length.
+freq : float or 3 elements float list, frequency bandwidth of morlet ex: f; or [f1,f2] or [fmin, fmax, df]</p>
+<h2 id="returns">Returns</h2>
+<p>dt: ndarray(nfreq, ntime), float, time shift vector (=phase / omega)
+ws1, ws2: ndarray(nfreq, ntime), complex, projection on Morlet wavelet</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def dt_morlet(sig1, sig2, wlen, freq):
+    &#34;&#34;&#34;
+    ## Description
+    Compute time shift between sig1 and sig2 using a moving projection on morlet wavelet transform
+
+    ## Input
+    ----------
+    sig1 : ndarray, first signal input
+    sig2 : ndarray, second signal input
+    wlen : int, window length.
+    freq : float or 3 elements float list, frequency bandwidth of morlet ex: f; or [f1,f2] or [fmin, fmax, df]
+
+    ## Returns
+    dt: ndarray(nfreq, ntime), float, time shift vector (=phase / omega)
+    ws1, ws2: ndarray(nfreq, ntime), complex, projection on Morlet wavelet
+    &#34;&#34;&#34;
+    from scipy.signal import morlet, correlate
+    from numpy import arange, asarray, pi, angle, ndarray, unwrap, dot, sqrt
+    
+    #
+    # set frequency range
+    #
+    if isinstance (freq, float):
+        freq = asarray([freq])
+    if (len(freq)==2):
+        freq = asarray(freq)
+    if len(freq)==3:
+        freq = arange(freq[0],freq[1]+freq[2],freq[2])
+
+    #
+    # initialize  output array
+    #
+    dt = ndarray((len(freq),len(sig1)))
+    ws1 = ndarray((len(freq),len(sig1)),dtype=complex)
+    ws2 = ndarray((len(freq),len(sig2)),dtype=complex)
+    for i,f in enumerate(freq):
+        omega = 2*pi*f
+        wm = morlet(wlen, omega)
+        norm =  sqrt(sum(abs(wm)**2))
+        wm = wm/norm
+        ws1[i,:] = correlate(sig1, wm, mode=&#39;same&#39;)
+        ws2[i,:] = correlate(sig2, wm, mode=&#39;same&#39;)
+        dt[i,:] = unwrap(angle(ws2[i,:])-angle(ws1[i,:]))/omega
+
+        
+    return freq, dt, ws1, ws2</code></pre>
+</details>
+</dd>
 <dt id="a1das.util.read_location_from_gpkg"><code class="name flex">
 <span>def <span class="ident">read_location_from_gpkg</span></span>(<span>file)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="description">Description</h2>
-<p>Read a fiber path from a gpkg file, supposedly in UTM coordinate</p>
+<p>Read fiber location information from a .gpkg (geopackage) file</p>
 <h2 id="return">Return</h2>
 <p>position: a numpy ndarray of size [3 x npoints] or [2 x npoints] if elevation is not known
 crs: coordinate reference system</p></div>
@@ -266,7 +409,7 @@ crs: coordinate reference system</p></div>
 <pre><code class="python">def read_location_from_gpkg(file):
     &#34;&#34;&#34;
     ##Description
-    Read a fiber path from a gpkg file, supposedly in UTM coordinate
+    Read fiber location information from a .gpkg (geopackage) file
 
     ##Return
     position: a numpy ndarray of size [3 x npoints] or [2 x npoints] if elevation is not known
@@ -298,9 +441,12 @@ crs: coordinate reference system</p></div>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="description">Description</h2>
-<p>Read position information from a h5 file (febus or reducted)</p>
+<p>Read fiber location information from a h5 file</p>
 <h2 id="return">Return</h2>
-<pre><code>positions: ndarray of size 3 x ntrace
+<pre><code>positions: ndarray of size 3 x ntrace (x,y,z for each trace)
+dist: ndarray of size ntrace          (curvilinear distance for each trace)
+trace: ndarray of size ntrace         (trace index)
+tgte: (optional) ndarray of size 3 x ntrace (tangent vector to the fiber)
 crs= (str) reference coordinate system
 pos_label= (tuple of str) labels for the 3 positions ('x','y','z') or ('lat','lon','elev') or ...
 </code></pre></div>
@@ -311,10 +457,13 @@ pos_label= (tuple of str) labels for the 3 positions ('x','y','z') or ('lat','lo
 <pre><code class="python">def read_location_from_h5(filename):
     &#34;&#34;&#34;
     ## Description
-    Read position information from a h5 file (febus or reducted)
+    Read fiber location information from a h5 file
 
     ## Return
-        positions: ndarray of size 3 x ntrace
+        positions: ndarray of size 3 x ntrace (x,y,z for each trace)
+        dist: ndarray of size ntrace          (curvilinear distance for each trace)
+        trace: ndarray of size ntrace         (trace index)
+        tgte: (optional) ndarray of size 3 x ntrace (tangent vector to the fiber)
         crs= (str) reference coordinate system
         pos_label= (tuple of str) labels for the 3 positions (&#39;x&#39;,&#39;y&#39;,&#39;z&#39;) or (&#39;lat&#39;,&#39;lon&#39;,&#39;elev&#39;) or ...
     &#34;&#34;&#34;
@@ -329,16 +478,23 @@ pos_label= (tuple of str) labels for the 3 positions ('x','y','z') or ('lat','lo
         pos_label = g.attrs[&#39;pos_label&#39;]
         position = g[&#39;position&#39;][::]
         dist = g[&#39;distance&#39;][:]
-        trace = g[&#39;trace&#39;]
+        trace = g[&#39;trace&#39;][:]
+        try:
+            tgte = g[&#39;tgte&#39;][::]
+        except:
+            tgte = None
     except:
         raise FileFormatError(&#39;file &#39;+filename+&#39;does not contain a location group&#39;)
 
     f.close()
-    return position, dist, trace, crs, pos_label</code></pre>
+    if tgte is None:
+        return position, dist, trace, crs, pos_label
+    else:
+        return position, dist, trace, tgte, crs, pos_label</code></pre>
 </details>
 </dd>
 <dt id="a1das.util.save_location_as_gpkg"><code class="name flex">
-<span>def <span class="ident">save_location_as_gpkg</span></span>(<span>fileout, position, dist, trace, crs)</span>
+<span>def <span class="ident">save_location_as_gpkg</span></span>(<span>fileout, position, dist, trace, crs, tgte=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="description">Description</h2>
@@ -349,12 +505,13 @@ This requires the 'geopandas' package</p>
 dist:
 (ndarray, float) [nspace] curvilinear abscissa
 trace: (ndarray, int) [nspace] trace index
-crs: (str) coordinate reference system in the standard form 'epgs:####'</p></div>
+crs: (str) coordinate reference system in the standard form 'epgs:####'
+tgte: optional,(ndarray, float) [3 x nspace]; tangent vector to the fiber</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def save_location_as_gpkg(fileout, position, dist, trace, crs):
+<pre><code class="python">def save_location_as_gpkg(fileout, position, dist, trace, crs, tgte = None):
     &#34;&#34;&#34;
     ## Description
     Save fiber location information using the geo-package format (.gpkg) which can be directly imported into QGIS.
@@ -364,6 +521,7 @@ crs: (str) coordinate reference system in the standard form 'epgs:####'</p></div
     dist:  (ndarray, float) [nspace] curvilinear abscissa
     trace: (ndarray, int) [nspace] trace index
     crs: (str) coordinate reference system in the standard form &#39;epgs:####&#39;
+    tgte: optional,(ndarray, float) [3 x nspace]; tangent vector to the fiber
     &#34;&#34;&#34;
     import geopandas as gpd
     from shapely.geometry import point
@@ -384,28 +542,34 @@ crs: (str) coordinate reference system in the standard form 'epgs:####'</p></div
 
     filename=[ None for d in dist]
     geometry = gpd.points_from_xy(position[0,:], position[1,:],position[2,:])
-    gdf=gpd.GeoDataFrame(data={&#39;curvilinear_abscissa&#39;:dist, &#39;trace&#39;:trace, &#39;filename&#39;:filename,
+    if tgte is None:
+        gdf=gpd.GeoDataFrame(data={&#39;curvilinear_abscissa&#39;:dist, &#39;trace&#39;:trace, &#39;filename&#39;:filename,
+                                   &#39;geometry&#39;:geometry}, crs = crs)
+    else:
+        gdf=gpd.GeoDataFrame(data={&#39;curvilinear_abscissa&#39;:dist, &#39;trace&#39;:trace,
+                                   &#39;tgtx&#39;:tgte[0,:],&#39;tgty&#39;:tgte[1,:],&#39;tgtz&#39;:tgte[2,:],
+                                   &#39;filename&#39;:filename,
                                    &#39;geometry&#39;:geometry}, crs = crs)
     gdf.to_file(fileout+&#39;.gpkg&#39;, driver=&#39;GPKG&#39;)</code></pre>
 </details>
 </dd>
 <dt id="a1das.util.save_location_as_h5"><code class="name flex">
-<span>def <span class="ident">save_location_as_h5</span></span>(<span>filename, position, dist, trace, crs, pos_label)</span>
+<span>def <span class="ident">save_location_as_h5</span></span>(<span>filename, position, dist, trace, crs, pos_label, tgte=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><h2 id="description">Description</h2>
 <p>Save (or append) fiber location information to a h5 file by adding/replacing the group "/location"
 and adding/replacing attributes.</p>
-<p>content of the group /location
+<pre><code>content of the group /location:
 datasets:
 /location/position (x,y,z)
-/location/trace
-trace_index
-/location/dist
-curvilinear abscissa
+/location/trace    trace_index
+/location/dist     curvilinear abscissa
 attributes:
 crs: coordinate reference system
-pos_label: (x,y,z) labels</p>
+pos_label: (x,y,z) labels
+tgte: optional, tangent vector in 3D space
+</code></pre>
 <h2 id="input">Input</h2>
 <pre><code>filename: (string) file to store location information. If data_filename is not defined, it is assumed to
           be the same as filename, and location information is appended to it.
@@ -420,20 +584,21 @@ labels: (tuple) lables for the three coordinates (ex: ('x','y','z') or ('lat','l
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def save_location_as_h5(filename, position, dist, trace, crs, pos_label):
+<pre><code class="python">def save_location_as_h5(filename, position, dist, trace, crs, pos_label, tgte=None):
     &#34;&#34;&#34;
     ## Description
     Save (or append) fiber location information to a h5 file by adding/replacing the group &#34;/location&#34;
     and adding/replacing attributes.
 
-    content of the group /location
-    datasets:
-    /location/position (x,y,z)
-    /location/trace    trace_index
-    /location/dist     curvilinear abscissa
-    attributes:
-    crs: coordinate reference system
-    pos_label: (x,y,z) labels
+        content of the group /location:
+        datasets:
+        /location/position (x,y,z)
+        /location/trace    trace_index
+        /location/dist     curvilinear abscissa
+        attributes:
+        crs: coordinate reference system
+        pos_label: (x,y,z) labels
+        tgte: optional, tangent vector in 3D space
 
     ## Input
         filename: (string) file to store location information. If data_filename is not defined, it is assumed to
@@ -487,6 +652,13 @@ labels: (tuple) lables for the three coordinates (ex: ('x','y','z') or ('lat','l
         dist_dset.resize((npos,))
         trace_dset = g[&#39;trace&#39;]
         trace_dset.resize((npos,))
+        if tgte is not None:
+            try:
+                tgte_dset = g[&#39;tgte&#39;]
+                tgte_dset.resize((3,npos))
+                tgte_dset = tgte
+            except:
+                tgte_dset = g.create_dataset(&#34;tgte&#34;, data=tgte, maxshape=(3, None))
 
         loc_dset[::] = position
         dist_dset[:] = dist
@@ -498,6 +670,8 @@ labels: (tuple) lables for the three coordinates (ex: ('x','y','z') or ('lat','l
         loc_dset = g.create_dataset(&#34;position&#34;, data=position, maxshape=(3,None))
         dist_dset = g.create_dataset(&#34;distance&#34;, data=dist, maxshape=(None,))
         trace_dset = g.create_dataset(&#34;trace&#34;, data=trace, maxshape=(None,), dtype=&#39;int32&#39;)
+        if tgte is not None:
+            tgte_dset = g.create_dataset(&#34;tgte&#34;, data=tgte, maxshape=(3,None))
         loc_attr = g.attrs
 
     loc_attr[&#39;crs&#39;] = crs
@@ -577,6 +751,7 @@ distance= distance along fiber (optional)
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="a1das.util.dt_morlet" href="#a1das.util.dt_morlet">dt_morlet</a></code></li>
 <li><code><a title="a1das.util.read_location_from_gpkg" href="#a1das.util.read_location_from_gpkg">read_location_from_gpkg</a></code></li>
 <li><code><a title="a1das.util.read_location_from_h5" href="#a1das.util.read_location_from_h5">read_location_from_h5</a></code></li>
 <li><code><a title="a1das.util.save_location_as_gpkg" href="#a1das.util.save_location_as_gpkg">save_location_as_gpkg</a></code></li>

@@ -47,7 +47,7 @@
 #
 # a1das version 2.0.0
 
-__all__=[&#34;core&#34;, &#34;reduction&#34;, &#34;xcor&#34;, &#34;_plot.py&#34;, &#34;_raw2strPy&#34;, &#34;_a1das_exception.py&#34;, &#34;_core_reducted_file.py&#34;,
+__all__=[&#34;core&#34;, &#34;reduction&#34;, &#34;xcor&#34;, &#34;util&#34;, &#34;_plot.py&#34;, &#34;_a1das_exception.py&#34;, &#34;_core_reducted_file.py&#34;,
          &#34;_a1xcorPy&#34;, &#34;_sosfilterPy&#34;, &#34;_core_febus_file.py&#34;, &#34;vserver&#34;]
 #
 # from a1das import *
@@ -63,13 +63,13 @@ from .core import *
 
 from . import reduction
 from . import xcor
+from . import util
+from . import vserver
 from . import _core_febus_file
 from . import _core_reducted_file
 from . import _core_socket
 from . import _a1xcorPy
-from . import _raw2strPy
 from . import _sosfilterPy
-from . import vserver
 from . import _plot</code></pre>
 </details>
 </section>
@@ -85,10 +85,14 @@ febus/reducted/socket das files</p></div>
 <dd>
 <div class="desc"><p>Functions for converting from Febus format to hdf5 reducted file and perform raw-to-strain[rate] conversion</p></div>
 </dd>
+<dt><code class="name"><a title="a1das.util" href="util.html">a1das.util</a></code></dt>
+<dd>
+<div class="desc"><p>Various tools to manipulate das data</p></div>
+</dd>
 <dt><code class="name"><a title="a1das.vserver" href="vserver.html">a1das.vserver</a></code></dt>
 <dd>
-<div class="desc"><p>Functions to emulate a DAS interrogator socket server. The DAS is replaced by a file in febus format
-These functions allows to play file data, or any …</p></div>
+<div class="desc"><p>Functions to emulate a DAS interrogator socket server. The DAS is replaced by a file
+These functions allows to play file data, or any process applied …</p></div>
 </dd>
 <dt><code class="name"><a title="a1das.xcor" href="xcor.html">a1das.xcor</a></code></dt>
 <dd>
@@ -113,6 +117,7 @@ These functions allows to play file data, or any …</p></div>
 <ul>
 <li><code><a title="a1das.core" href="core.html">a1das.core</a></code></li>
 <li><code><a title="a1das.reduction" href="reduction.html">a1das.reduction</a></code></li>
+<li><code><a title="a1das.util" href="util.html">a1das.util</a></code></li>
 <li><code><a title="a1das.vserver" href="vserver.html">a1das.vserver</a></code></li>
 <li><code><a title="a1das.xcor" href="xcor.html">a1das.xcor</a></code></li>
 </ul>

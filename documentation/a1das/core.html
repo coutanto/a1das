@@ -132,7 +132,7 @@ class A1File:
     def is_transposed(self):
         &#34;&#34;&#34;
         ## Description
-        Only relevant for &#34;reducted&#34; format. Return True if the data are transposed from the original Febus format.
+        Only relevant for &#39;reducted&#39; format. Return True if the data are transposed from the original Febus format.
 
         Transposed =  the data array is stored as data[nspace, ntime],
 
@@ -558,8 +558,11 @@ class A1File:
         :param drange: extract positions from from_to_position[0] to from_to_position[1], if not used set to None
         :param ddecim: space decimation step, if not used set to 1
 
-        :return: distance_fiber_out, distance_indices, distance_fiber_in
-                 distance_vector selected, array of distance indices in the input distance_vector
+        :return:
+        distance_fiber_out: vector of distances requested by drange and decime arguments
+        distance_indices:   range of indices to build distance_fiber_out
+        distance_fiber_in:  original vector of distances
+
         &#39;&#39;&#39;
         from numpy import linspace, nanargmin
 
@@ -805,8 +808,8 @@ class A1Section:
         time = self[&#39;time&#39;]
         otime += time[0]
         time -= time[0]
-        self.set_item(otime=otime)
-        self.set_item(time=time)
+        self.data_header.set_item(otime=otime)
+        self.data_header.set_item(time=time)
 
     #
     # ====================================   OBSPY_STREAM()  =======================================
@@ -869,7 +872,7 @@ class A1Section:
         trange = (list or tuple) [unique_time]; [time_min, time_max]; [t1, t2, ... tN]  (default = None, take all)
 
         ## Return
-        A list of indices that matches the given range in the A1Section.data_header[&#39;dist&#39;] or
+        A list of indices that match the given range in the A1Section.data_header[&#39;dist&#39;] or
         A1Section.data_header[&#39;time&#39;] vectors
 
         ## Usage example
@@ -1022,7 +1025,7 @@ class A1Section:
         data_header = self.data_header.copy()
         data_header.set_item(ntime=self[&#39;ntime&#39;]+b[&#39;ntime&#39;])
         data_header.set_item(time=np.concatenate((time_a,time_b)))
-        newdata = np.vstack((self.data, b.data))
+        newdata = np.hstack((self.data, b.data))
 
         return A1Section(data_header, newdata)
 
@@ -1200,7 +1203,26 @@ def __display__(f):
 # Needed for compatibility with 2.7
 # f.visit() can&#39;t call directly print in 2.7, but can call myprint()
 def __myprint__(x):
-    print(x)</code></pre>
+    print(x)
+
+
+def utime(str, format=&#34;%Y:%m:%d-%H:%M:%S&#34;):
+    &#34;&#34;&#34;
+    ## Description
+    Return Posix UTC time from a date string of the form YYYY:MM:DD-hr:mn:ss.sss (default)
+    ## Input
+    str: string, date
+    format: string, optional, date format, default=&#34;%Y:%m:%d-%H:%M:%S&#34;
+    ## Return
+    Posix time
+    &#34;&#34;&#34;
+    from datetime import timezone, datetime
+    from ._a1das_exception import WrongValueError
+
+    d = datetime.strptime(str, format)
+    dd = datetime(d.year, d.month, d.day, d.hour, d.minute, d.second, tzinfo=timezone.utc)
+    # convert to Posix
+    return dd.timestamp()</code></pre>
 </details>
 </section>
 <section>
@@ -1348,6 +1370,40 @@ port = IP port default to 6667</p></div>
     return &#34;tcp://%s:%d&#34; % (address, port)</code></pre>
 </details>
 </dd>
+<dt id="a1das.core.utime"><code class="name flex">
+<span>def <span class="ident">utime</span></span>(<span>str, format='%Y:%m:%d-%H:%M:%S')</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="description">Description</h2>
+<p>Return Posix UTC time from a date string of the form YYYY:MM:DD-hr:mn:ss.sss (default)</p>
+<h2 id="input">Input</h2>
+<p>str: string, date
+format: string, optional, date format, default="%Y:%m:%d-%H:%M:%S"</p>
+<h2 id="return">Return</h2>
+<p>Posix time</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def utime(str, format=&#34;%Y:%m:%d-%H:%M:%S&#34;):
+    &#34;&#34;&#34;
+    ## Description
+    Return Posix UTC time from a date string of the form YYYY:MM:DD-hr:mn:ss.sss (default)
+    ## Input
+    str: string, date
+    format: string, optional, date format, default=&#34;%Y:%m:%d-%H:%M:%S&#34;
+    ## Return
+    Posix time
+    &#34;&#34;&#34;
+    from datetime import timezone, datetime
+    from ._a1das_exception import WrongValueError
+
+    d = datetime.strptime(str, format)
+    dd = datetime(d.year, d.month, d.day, d.hour, d.minute, d.second, tzinfo=timezone.utc)
+    # convert to Posix
+    return dd.timestamp()</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -1440,7 +1496,7 @@ A1File.data_header:    metadata       (_A1DataHeader class instance)
     def is_transposed(self):
         &#34;&#34;&#34;
         ## Description
-        Only relevant for &#34;reducted&#34; format. Return True if the data are transposed from the original Febus format.
+        Only relevant for &#39;reducted&#39; format. Return True if the data are transposed from the original Febus format.
 
         Transposed =  the data array is stored as data[nspace, ntime],
 
@@ -1866,8 +1922,11 @@ A1File.data_header:    metadata       (_A1DataHeader class instance)
         :param drange: extract positions from from_to_position[0] to from_to_position[1], if not used set to None
         :param ddecim: space decimation step, if not used set to 1
 
-        :return: distance_fiber_out, distance_indices, distance_fiber_in
-                 distance_vector selected, array of distance indices in the input distance_vector
+        :return:
+        distance_fiber_out: vector of distances requested by drange and decime arguments
+        distance_indices:   range of indices to build distance_fiber_out
+        distance_fiber_in:  original vector of distances
+
         &#39;&#39;&#39;
         from numpy import linspace, nanargmin
 
@@ -1974,7 +2033,7 @@ A1File.data_header:    metadata       (_A1DataHeader class instance)
 </code></dt>
 <dd>
 <div class="desc"><h2 id="description">Description</h2>
-<p>Only relevant for "reducted" format. Return True if the data are transposed from the original Febus format.</p>
+<p>Only relevant for 'reducted' format. Return True if the data are transposed from the original Febus format.</p>
 <p>Transposed =
 the data array is stored as data[nspace, ntime],</p>
 <p>Not transposed = the data array is stored as data[ntime, nspace],</p>
@@ -1987,7 +2046,7 @@ the data array is stored as data[nspace, ntime],</p>
 <pre><code class="python">def is_transposed(self):
     &#34;&#34;&#34;
     ## Description
-    Only relevant for &#34;reducted&#34; format. Return True if the data are transposed from the original Febus format.
+    Only relevant for &#39;reducted&#39; format. Return True if the data are transposed from the original Febus format.
 
     Transposed =  the data array is stored as data[nspace, ntime],
 
@@ -2450,8 +2509,8 @@ A1Section.data_header   header       (_A1DataHeader class instance)
         time = self[&#39;time&#39;]
         otime += time[0]
         time -= time[0]
-        self.set_item(otime=otime)
-        self.set_item(time=time)
+        self.data_header.set_item(otime=otime)
+        self.data_header.set_item(time=time)
 
     #
     # ====================================   OBSPY_STREAM()  =======================================
@@ -2514,7 +2573,7 @@ A1Section.data_header   header       (_A1DataHeader class instance)
         trange = (list or tuple) [unique_time]; [time_min, time_max]; [t1, t2, ... tN]  (default = None, take all)
 
         ## Return
-        A list of indices that matches the given range in the A1Section.data_header[&#39;dist&#39;] or
+        A list of indices that match the given range in the A1Section.data_header[&#39;dist&#39;] or
         A1Section.data_header[&#39;time&#39;] vectors
 
         ## Usage example
@@ -2667,7 +2726,7 @@ A1Section.data_header   header       (_A1DataHeader class instance)
         data_header = self.data_header.copy()
         data_header.set_item(ntime=self[&#39;ntime&#39;]+b[&#39;ntime&#39;])
         data_header.set_item(time=np.concatenate((time_a,time_b)))
-        newdata = np.vstack((self.data, b.data))
+        newdata = np.hstack((self.data, b.data))
 
         return A1Section(data_header, newdata)
 
@@ -2771,7 +2830,7 @@ if a and b are ordered as [time x space], not implemented
     data_header = self.data_header.copy()
     data_header.set_item(ntime=self[&#39;ntime&#39;]+b[&#39;ntime&#39;])
     data_header.set_item(time=np.concatenate((time_a,time_b)))
-    newdata = np.vstack((self.data, b.data))
+    newdata = np.hstack((self.data, b.data))
 
     return A1Section(data_header, newdata)</code></pre>
 </details>
@@ -2807,7 +2866,7 @@ in the 'distance' vector (resp. time vector)</p>
 <p>trange = (list or tuple) [unique_time]; [time_min, time_max]; [t1, t2, &hellip; tN]
 (default = None, take all)</p>
 <h2 id="return">Return</h2>
-<p>A list of indices that matches the given range in the A1Section.data_header['dist'] or
+<p>A list of indices that match the given range in the A1Section.data_header['dist'] or
 A1Section.data_header['time'] vectors</p>
 <h2 id="usage-example">Usage example</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; import a1das
@@ -2840,7 +2899,7 @@ A1Section.data_header['time'] vectors</p>
     trange = (list or tuple) [unique_time]; [time_min, time_max]; [t1, t2, ... tN]  (default = None, take all)
 
     ## Return
-    A list of indices that matches the given range in the A1Section.data_header[&#39;dist&#39;] or
+    A list of indices that match the given range in the A1Section.data_header[&#39;dist&#39;] or
     A1Section.data_header[&#39;time&#39;] vectors
 
     ## Usage example
@@ -3315,8 +3374,8 @@ in the section. After this operation, the value of time[0] is equal to 0.</p></d
     time = self[&#39;time&#39;]
     otime += time[0]
     time -= time[0]
-    self.set_item(otime=otime)
-    self.set_item(time=time)</code></pre>
+    self.data_header.set_item(otime=otime)
+    self.data_header.set_item(time=time)</code></pre>
 </details>
 </dd>
 <dt id="a1das.core.A1Section.time"><code class="name flex">
@@ -3358,6 +3417,7 @@ in the section. After this operation, the value of time[0] is equal to 0.</p></d
 <li><code><a title="a1das.core.open" href="#a1das.core.open">open</a></code></li>
 <li><code><a title="a1das.core.set_true_time_policy" href="#a1das.core.set_true_time_policy">set_true_time_policy</a></code></li>
 <li><code><a title="a1das.core.tcp_address" href="#a1das.core.tcp_address">tcp_address</a></code></li>
+<li><code><a title="a1das.core.utime" href="#a1das.core.utime">utime</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>

@@ -215,6 +215,7 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
     &#34;&#34;&#34;
     from a1das import _a1xcorPy, A1Section
     from a1das._a1das_exception import DataTypeError
+    from numpy import ndarray
 
     #
     # determine the cross-correlation length depending on lag and parity of signal length
@@ -235,14 +236,21 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
         a1 = arrayIn
         arrayIn = arrayIn.data
         lag = int(lag/a1.data_header[&#39;dt&#39;])
-        if a1.data_header[&#39;data_axis&#39;] == &#39;space_x_time&#39;:
-            raise DataTypeError(&#39;data das section organized as array of dim [space x time] not yet implemented for x_corr, take transpose first&#39;)
+        if a1.data_header[&#39;axis1&#39;] == &#39;space&#39;:
+            transposed = True
+            ntime = arrayIn.shape[1]
+        else:
+            transposed = False
+            ntime = arrayIn.shape[0]
         lag_is_second = True
+        if arrayIn.dtype != np.float64:
+            raise DataTypeError(&#39;Can only process float64 data type, please convert before calling xcorr&#39;)
+    elif isinstance(arrayIn, ndarray):
+        ntime = arrayIn.shape[0]
+        transposed = False
+    else:
+        raise DataTypeError(&#39;Data array must be an A1Section or a numpy ndarray (ntime x nspace)&#39;)
 
-    if arrayIn.dtype != np.float64:
-        raise DataTypeError(&#39;Can only process float64 data type, please convert before calling xcorr&#39;)
-
-    ntime = arrayIn.shape[0]
     if lag is None:
         lag = ntime
     lag = int(lag)
@@ -262,7 +270,7 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
         else:
             if (2*lag + 1 &gt; ntime):
                 lag = (ntime-1)/2
-            len = 2*lag+1
+            len = int(2*lag+1)
         lags = np.arange(-lag, lag + 1)
 
     # get the number of correlation to be computed
@@ -282,7 +290,7 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
 
     if (verbose&gt;=2):
         print(&#39;signal length is &#39;,arrayIn.shape[0],&#39;FFT length is &#39;,len)
-    xcorr, ijx, ier = _a1xcorPy.a1xcor.compute_xcorr(arrayIn, xcorr, ijx, int(lag), stack)
+    xcorr, ijx, ier = _a1xcorPy.a1xcor.compute_xcorr(arrayIn, xcorr, ijx, int(lag), stack, transposed)
 
     if (verbose&gt;0):
         print(&#39;Done&#39;)
@@ -471,6 +479,7 @@ ier: return code, 0 if ok
     &#34;&#34;&#34;
     from a1das import _a1xcorPy, A1Section
     from a1das._a1das_exception import DataTypeError
+    from numpy import ndarray
 
     #
     # determine the cross-correlation length depending on lag and parity of signal length
@@ -491,14 +500,21 @@ ier: return code, 0 if ok
         a1 = arrayIn
         arrayIn = arrayIn.data
         lag = int(lag/a1.data_header[&#39;dt&#39;])
-        if a1.data_header[&#39;data_axis&#39;] == &#39;space_x_time&#39;:
-            raise DataTypeError(&#39;data das section organized as array of dim [space x time] not yet implemented for x_corr, take transpose first&#39;)
+        if a1.data_header[&#39;axis1&#39;] == &#39;space&#39;:
+            transposed = True
+            ntime = arrayIn.shape[1]
+        else:
+            transposed = False
+            ntime = arrayIn.shape[0]
         lag_is_second = True
+        if arrayIn.dtype != np.float64:
+            raise DataTypeError(&#39;Can only process float64 data type, please convert before calling xcorr&#39;)
+    elif isinstance(arrayIn, ndarray):
+        ntime = arrayIn.shape[0]
+        transposed = False
+    else:
+        raise DataTypeError(&#39;Data array must be an A1Section or a numpy ndarray (ntime x nspace)&#39;)
 
-    if arrayIn.dtype != np.float64:
-        raise DataTypeError(&#39;Can only process float64 data type, please convert before calling xcorr&#39;)
-
-    ntime = arrayIn.shape[0]
     if lag is None:
         lag = ntime
     lag = int(lag)
@@ -518,7 +534,7 @@ ier: return code, 0 if ok
         else:
             if (2*lag + 1 &gt; ntime):
                 lag = (ntime-1)/2
-            len = 2*lag+1
+            len = int(2*lag+1)
         lags = np.arange(-lag, lag + 1)
 
     # get the number of correlation to be computed
@@ -538,7 +554,7 @@ ier: return code, 0 if ok
 
     if (verbose&gt;=2):
         print(&#39;signal length is &#39;,arrayIn.shape[0],&#39;FFT length is &#39;,len)
-    xcorr, ijx, ier = _a1xcorPy.a1xcor.compute_xcorr(arrayIn, xcorr, ijx, int(lag), stack)
+    xcorr, ijx, ier = _a1xcorPy.a1xcor.compute_xcorr(arrayIn, xcorr, ijx, int(lag), stack, transposed)
 
     if (verbose&gt;0):
         print(&#39;Done&#39;)

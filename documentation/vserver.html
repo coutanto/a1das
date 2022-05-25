@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
 <title>a1das.vserver API documentation</title>
-<meta name="description" content="Functions to emulate a DAS interrogator socket server. The DAS is replaced by a file in febus format
-These functions allows to play file data, or any …" />
+<meta name="description" content="Functions to emulate a DAS interrogator socket server. The DAS is replaced by a file
+These functions allows to play file data, or any process applied …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -23,7 +23,7 @@ These functions allows to play file data, or any …" />
 <h1 class="title">Module <code>a1das.vserver</code></h1>
 </header>
 <section id="section-intro">
-<p>Functions to emulate a DAS interrogator socket server. The DAS is replaced by a file in febus format
+<p>Functions to emulate a DAS interrogator socket server. The DAS is replaced by a file
 These functions allows to play file data, or any process applied on data, and view them like a movie</p>
 <details class="source">
 <summary>
@@ -34,7 +34,7 @@ import array
 import numpy as np
 import struct
 
-__doc__=&#34;Functions to emulate a DAS interrogator socket server. The DAS is replaced by a file in febus format&#34;+ \
+__doc__=&#34;Functions to emulate a DAS interrogator socket server. The DAS is replaced by a file&#34;+ \
         &#34;\n These functions allows to play file data, or any process applied on data, and view them like a movie&#34;
 
 def ZMQVirtualDasServer(file, host=&#39;127.0.0.1&#39;, port=6667, block=None):
@@ -68,13 +68,15 @@ def ZMQVirtualDasServer(file, host=&#39;127.0.0.1&#39;, port=6667, block=None):
     #
     f = a1das.open(file)
     # set origin time
-    f.set_otime_from_filename()
+    #f.set_otime_from_filename()
     #read block info
     nblock = f.file_header.block_info[&#39;nb_block&#39;]
     #read freq_res
     freq_res = f.file_header.freq_res
     delta_t = 1./freq_res
-    time = f.data_header[&#39;otime&#39;]
+    #time = f.data_header[&#39;otime&#39;]
+    block_times = f.file_header.block_info[&#39;block_times&#39;]
+    time = block_times[0]
 
 
     # wait for an acq
@@ -100,10 +102,12 @@ def ZMQVirtualDasServer(file, host=&#39;127.0.0.1&#39;, port=6667, block=None):
         # resend headers and data
         #
         time1 = timer()
-        while (time1 - time0 &lt; delta_t):
-            time1 = timer()
+        #temporisation
+        #while (time1 - time0 &lt; delta_t):
+        #    time1 = timer()
         time0 = time1
-        time += delta_t
+        #time += delta_t
+        time = block_times[i]
         message2 = _set_and_send_header_to_ZMQ(f.data_header, f.file_header, time, socket, message2=message2)
 
         data = a1das._core_febus_file._read_febus_file_block(f, block=i)
@@ -115,7 +119,7 @@ def ZMQVirtualDasServer(file, host=&#39;127.0.0.1&#39;, port=6667, block=None):
 
 
 #
-# ========================================= RAW2STRAIN()  ============================
+# ========================================= ZMQRAWVIRTUALDASSERVER()  ============================
 #
 def ZMQRawVirtualDasServer(filein,  GL, DT, order_time=2, order_space=2, trange=None, drange=None, tdecim=1, ddecim=1,
                 verbose=0, host=&#39;127.0.0.1&#39;, port=6667):
@@ -176,7 +180,7 @@ def ZMQRawVirtualDasServer(filein,  GL, DT, order_time=2, order_space=2, trange=
     #
     #  --------------------------- block time size
 
-    block_time_size = int(hd.block_info[&#39;time_size&#39;] / 2)
+    block_time_size = int(hd.block_info[&#39;block_time_size&#39;] / 2)
 
     #
     # check whether time decimation factor is ok or not, it must divide
@@ -342,21 +346,123 @@ def ZMQRawVirtualDasServer(filein,  GL, DT, order_time=2, order_space=2, trange=
     a1.close()
     socket.close()
 
+#
+# ========================================= ZMQREDUCTEDVIRTUALDASSERVER()  ============================
+#
+def ZMQReductedVirtualServer(filein, prefix, trange=None, drange=None, tdecim=1, ddecim=1,
+                verbose=0, host=&#39;127.0.0.1&#39;, port=6667, block_time=2.):
+    &#34;&#34;&#34;
+    ##Description
+    Read a reducted file and send data on a ZMQ socket server
+    ##Input
+    filein = (string) file name
+    prefix = (string) prefix to be used to extract origin time from filename
+    trange = [tmin, tmax] time range
+    drange = [dmin, dmax] distance range
+    tdecim = (int) time decimation
+    ddecim = (int) space decimation
+    verbose = (int) verbosity level
+    host = (string) IP address of host
+    port = (int) port
+    block_time = length of time block sent
+    &#34;&#34;&#34;
+    import a1das
+    import zmq
+    import pickle
+    from io import BytesIO
+    from timeit import default_timer as timer
+
+    f = a1das.open(filein, format=&#39;reducted&#39;)
+
+    #get header usefull values
+    dt = f[&#39;dt&#39;]
+    nspace = f[&#39;nspace&#39;]
+    ntime = f[&#39;ntime&#39;]
+
+    #set distance reading limits
+    if drange is not None:
+        dlist = f.index(drange=drange)
+        space_range = range(dlist[0],dlist[1],ddecim)
+    else:
+        space_range = range(0,nspace,ddecim)
+
+    # set time reading limits
+    if trange is not None:
+        tlist = f.index(trange=trange)
+        time_range = range(tlist[0], tlist[1],tdecim)
+    else:
+        time_range=(0,ntime,tdecim)
+
+    dt = dt*tdecim
+
+    #set Febus-file-like parameters
+    block_time_size = int(block_time / dt)
+    shift_time_size = int(block_time_size/2)
+    delta_t = shift_time_size*dt
+    f.file_header.block_info={&#39;block_time_size&#39;:block_time_size}
+
+    # set origin time
+    #f.set_otime_from_filename(prefix=prefix)
+    time = f[&#39;otime&#39;]
+
+
+
+    # open ZMQ connection
+    context = zmq.Context()
+    socket = context.socket(zmq.REP)
+    socket.bind(&#34;tcp://%s:%d&#34; % (host, port))
+    print(&#39;launching DAS virtual server on address: &lt;&#39;,&#34;tcp://%s:%d&#34; % (host, port),&#39;&gt;&#39;)
+
+    # wait for an acq
+    _wait_for_acq(socket, time)
+
+    # Set and Send header(s)
+    message2 = _set_and_send_header_to_ZMQ(f.data_header, f.file_header, time, socket)
+
+    #
+    # Loop reading data
+    #
+    if f.is_transposed():
+
+        #get HDF5 file descriptor
+        fd = f.file_header.fd
+
+        buffer = np.empty((len(space_range),block_time_size),dtype=np.float32)
+        # Loop on block time
+        for i in range(0,ntime,shift_time_size):
+            start = i
+            end = i + block_time_size
+            for j, jx in enumerate(space_range):
+                buffer[j,:] = fd[&#39;/Traces/&#39;+str(jx)][start:end]
+
+            message3 = buffer.transpose().copy()
+            socket.send(message3)
+
+            time += delta_t
+            _wait_for_acq(socket, time)
+            message2 = _set_and_send_header_to_ZMQ(f.data_header, f.file_header, time, socket, message2=message2)
+    else:
+        print(&#39;not yet implemented&#39;)
+
+    f.close()
+    socket.close()
 
 def _wait_for_acq(socket, time=0):
     &#34;&#34;&#34;
     Wait for an ACQ message from the server
     &#34;&#34;&#34;
+    from datetime import datetime, timezone
     msg = socket.recv()
     acq = struct.unpack(&#34;@d&#34;, msg)[0]
     if acq != 0.:
         raise VirtualServerError(&#39;Wrong Acq&#39;)
     else:
-        print(&#39;received &#39;, acq,&#39; @ time&#39;,time)
+        print(&#39;received &#39;, acq,&#39; @ time&#39;,time,datetime.fromtimestamp(time, tz=timezone.utc).strftime(&#39;%Y:%m:%d-%H:%M:%S.%f&#39;))
 
 def _set_and_send_header_to_ZMQ(dhd, fhd, time, socket, message2=None):
     &#34;&#34;&#34;
-
+    The protocol contains 3 messages, 2 for headers and one for data
+    This routine create/update message 1, prepare message 2 and send message1 and message2
     &#34;&#34;&#34;
     import zmq
     from io import BytesIO
@@ -376,7 +482,7 @@ def _set_and_send_header_to_ZMQ(dhd, fhd, time, socket, message2=None):
         message2.write(np.int32([0]))
         message2.write(np.int32(dhd[&#39;nspace&#39;]-1))
         message2.write(np.int32([0]))
-        message2.write(np.int32(fhd.block_info[&#39;time_size&#39;]-1))
+        message2.write(np.int32(fhd.block_info[&#39;block_time_size&#39;]-1))
         message2.write(np.float64(0.)) # to fill 72 bytes
         message2.write(np.int32([0]))
 
@@ -480,7 +586,7 @@ verbose: be verbose (default=0, minimum message level)
     #
     #  --------------------------- block time size
 
-    block_time_size = int(hd.block_info[&#39;time_size&#39;] / 2)
+    block_time_size = int(hd.block_info[&#39;block_time_size&#39;] / 2)
 
     #
     # check whether time decimation factor is ok or not, it must divide
@@ -647,6 +753,126 @@ verbose: be verbose (default=0, minimum message level)
     socket.close()</code></pre>
 </details>
 </dd>
+<dt id="a1das.vserver.ZMQReductedVirtualServer"><code class="name flex">
+<span>def <span class="ident">ZMQReductedVirtualServer</span></span>(<span>filein, prefix, trange=None, drange=None, tdecim=1, ddecim=1, verbose=0, host='127.0.0.1', port=6667, block_time=2.0)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="description">Description</h2>
+<p>Read a reducted file and send data on a ZMQ socket server</p>
+<h2 id="input">Input</h2>
+<p>filein = (string) file name
+prefix = (string) prefix to be used to extract origin time from filename
+trange = [tmin, tmax] time range
+drange = [dmin, dmax] distance range
+tdecim = (int) time decimation
+ddecim = (int) space decimation
+verbose = (int) verbosity level
+host = (string) IP address of host
+port = (int) port
+block_time = length of time block sent</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ZMQReductedVirtualServer(filein, prefix, trange=None, drange=None, tdecim=1, ddecim=1,
+                verbose=0, host=&#39;127.0.0.1&#39;, port=6667, block_time=2.):
+    &#34;&#34;&#34;
+    ##Description
+    Read a reducted file and send data on a ZMQ socket server
+    ##Input
+    filein = (string) file name
+    prefix = (string) prefix to be used to extract origin time from filename
+    trange = [tmin, tmax] time range
+    drange = [dmin, dmax] distance range
+    tdecim = (int) time decimation
+    ddecim = (int) space decimation
+    verbose = (int) verbosity level
+    host = (string) IP address of host
+    port = (int) port
+    block_time = length of time block sent
+    &#34;&#34;&#34;
+    import a1das
+    import zmq
+    import pickle
+    from io import BytesIO
+    from timeit import default_timer as timer
+
+    f = a1das.open(filein, format=&#39;reducted&#39;)
+
+    #get header usefull values
+    dt = f[&#39;dt&#39;]
+    nspace = f[&#39;nspace&#39;]
+    ntime = f[&#39;ntime&#39;]
+
+    #set distance reading limits
+    if drange is not None:
+        dlist = f.index(drange=drange)
+        space_range = range(dlist[0],dlist[1],ddecim)
+    else:
+        space_range = range(0,nspace,ddecim)
+
+    # set time reading limits
+    if trange is not None:
+        tlist = f.index(trange=trange)
+        time_range = range(tlist[0], tlist[1],tdecim)
+    else:
+        time_range=(0,ntime,tdecim)
+
+    dt = dt*tdecim
+
+    #set Febus-file-like parameters
+    block_time_size = int(block_time / dt)
+    shift_time_size = int(block_time_size/2)
+    delta_t = shift_time_size*dt
+    f.file_header.block_info={&#39;block_time_size&#39;:block_time_size}
+
+    # set origin time
+    #f.set_otime_from_filename(prefix=prefix)
+    time = f[&#39;otime&#39;]
+
+
+
+    # open ZMQ connection
+    context = zmq.Context()
+    socket = context.socket(zmq.REP)
+    socket.bind(&#34;tcp://%s:%d&#34; % (host, port))
+    print(&#39;launching DAS virtual server on address: &lt;&#39;,&#34;tcp://%s:%d&#34; % (host, port),&#39;&gt;&#39;)
+
+    # wait for an acq
+    _wait_for_acq(socket, time)
+
+    # Set and Send header(s)
+    message2 = _set_and_send_header_to_ZMQ(f.data_header, f.file_header, time, socket)
+
+    #
+    # Loop reading data
+    #
+    if f.is_transposed():
+
+        #get HDF5 file descriptor
+        fd = f.file_header.fd
+
+        buffer = np.empty((len(space_range),block_time_size),dtype=np.float32)
+        # Loop on block time
+        for i in range(0,ntime,shift_time_size):
+            start = i
+            end = i + block_time_size
+            for j, jx in enumerate(space_range):
+                buffer[j,:] = fd[&#39;/Traces/&#39;+str(jx)][start:end]
+
+            message3 = buffer.transpose().copy()
+            socket.send(message3)
+
+            time += delta_t
+            _wait_for_acq(socket, time)
+            message2 = _set_and_send_header_to_ZMQ(f.data_header, f.file_header, time, socket, message2=message2)
+    else:
+        print(&#39;not yet implemented&#39;)
+
+    f.close()
+    socket.close()</code></pre>
+</details>
+</dd>
 <dt id="a1das.vserver.ZMQVirtualDasServer"><code class="name flex">
 <span>def <span class="ident">ZMQVirtualDasServer</span></span>(<span>file, host='127.0.0.1', port=6667, block=None)</span>
 </code></dt>
@@ -697,13 +923,15 @@ port = IP port for the virtual server
     #
     f = a1das.open(file)
     # set origin time
-    f.set_otime_from_filename()
+    #f.set_otime_from_filename()
     #read block info
     nblock = f.file_header.block_info[&#39;nb_block&#39;]
     #read freq_res
     freq_res = f.file_header.freq_res
     delta_t = 1./freq_res
-    time = f.data_header[&#39;otime&#39;]
+    #time = f.data_header[&#39;otime&#39;]
+    block_times = f.file_header.block_info[&#39;block_times&#39;]
+    time = block_times[0]
 
 
     # wait for an acq
@@ -729,10 +957,12 @@ port = IP port for the virtual server
         # resend headers and data
         #
         time1 = timer()
-        while (time1 - time0 &lt; delta_t):
-            time1 = timer()
+        #temporisation
+        #while (time1 - time0 &lt; delta_t):
+        #    time1 = timer()
         time0 = time1
-        time += delta_t
+        #time += delta_t
+        time = block_times[i]
         message2 = _set_and_send_header_to_ZMQ(f.data_header, f.file_header, time, socket, message2=message2)
 
         data = a1das._core_febus_file._read_febus_file_block(f, block=i)
@@ -762,6 +992,7 @@ port = IP port for the virtual server
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="a1das.vserver.ZMQRawVirtualDasServer" href="#a1das.vserver.ZMQRawVirtualDasServer">ZMQRawVirtualDasServer</a></code></li>
+<li><code><a title="a1das.vserver.ZMQReductedVirtualServer" href="#a1das.vserver.ZMQReductedVirtualServer">ZMQReductedVirtualServer</a></code></li>
 <li><code><a title="a1das.vserver.ZMQVirtualDasServer" href="#a1das.vserver.ZMQVirtualDasServer">ZMQVirtualDasServer</a></code></li>
 </ul>
 </li>

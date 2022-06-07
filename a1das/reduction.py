@@ -28,8 +28,7 @@
 
 import numpy as np
 #TODO verifier l'etat de l'option ddecim >1 dans les 3 fonctions
-#TODO eclaircir l'option trange pour la reduction et la lecture, autoriser une selection par dimension ou par indice \
-# (avec range), et un choix unique
+
 __doc__="Functions for converting from Febus format to hdf5 reducted file and perform raw-to-strain[rate] conversion"
 
 #
@@ -48,20 +47,21 @@ def reduction_transpose(filein, fileout, trange=None, drange=None, tdecim=1, dde
     After reduction, data is kept in float32 representation
 
     ##Input
-        filein, fileout: hdf5 (.h5) file to read/write
-        trange:  (tuple, list) time range in sec (start,end), (default = None, everything is read)
-        drange:  (tuple, list) distance range in meter (not km) (start,end), (default = None, everything is read)
-        ddecim:  (int) distance decimation factor (default=1)
-        tdecim:  (int) time decimation factor (default=1)
-        position: (float ndarray[3,:]) 3 x ntraces array with x,y,z position (default=None)
-        hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)
-        kchunk:  (int) output_time_chunk_size set to input_time_chunk_size * kchunk (default=10)
-        trace_chunk: (int) write trace_chunk traces per space block/chunk (default = ntrace/100)
-        skip:    (bool) skip redundant block when reading data (default=False)
-        verbose: (int) be verbose (default=0, minimum message level)
-        filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)
-        no_aliasing: (bool) if tdecim >1, apply a Low pass filter at 0.9 F_nyquist (default True)
-        compression: (bool) compress data in H5 files (default False)
+    filein, fileout: hdf5 (.h5) file to read/write<br>
+    trange:  (tuple, list) read time range see `a1das.core.parse_trange` for detail<br>
+    default = None, everything is read<br>
+    drange:  (tuple, list) distance range in meter (not km) (start,end),see `a1das.core.parse_drange` for detail<br>
+    ddecim:  (int) distance decimation factor (default=1)<br>
+    tdecim:  (int) time decimation factor (default=1)<br>
+    position: (float ndarray[3,:]) 3 x ntraces array with x,y,z position (default=None)<br>
+    hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)<br>
+    kchunk:  (int) output_time_chunk_size set to input_time_chunk_size * kchunk (default=10)<br>
+    trace_chunk: (int) write trace_chunk traces per space block/chunk (default = ntrace/100)<br>
+    skip:    (bool) skip redundant block when reading data (default=False)<br>
+    verbose: (int) be verbose (default=0, minimum message level)<br>
+    filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)<br>
+    no_aliasing: (bool) if tdecim >1, apply a Low pass filter at 0.9 F_nyquist (default True)<br>
+    compression: (bool) compress data in H5 files (default False)<br>
 
 
     ##Reading transposed reducted output file
@@ -94,6 +94,7 @@ def reduction_transpose(filein, fileout, trange=None, drange=None, tdecim=1, dde
     '''
     import h5py
     from scipy import signal
+    from .core import parse_trange, parse_drange
     from ._core_reducted_file import  _create_h5_group_transposed_by_trace, _create_h5_group_transposed_by_section, \
                                     __version_reducted_format__
     from ._core_febus_file import _true_time_policy
@@ -127,6 +128,13 @@ def reduction_transpose(filein, fileout, trange=None, drange=None, tdecim=1, dde
 
     if isinstance(hd.node,list):
         raise FileFormatError('Cannot reduce raw data, only strain(rate)')
+
+    #
+    # parse (d)trange input format
+    #
+    drange = parse_drange(f.data_header, drange)
+    trange = parse_trange(f.data_header, trange)
+
     #
     #  --------------------------- block time size
     #  we read the full block and skip redundant blocks
@@ -359,18 +367,19 @@ def reduction_notranspose(filein, fileout, trange=None, drange=None, tdecim=1, d
     After reduction, the records are stored in a single 2D array (time x space) where space = fast axis
 
     ##Input
-        filein, fileout: hdf5 (.h5) file to read/write
-        trange:  (tuple, list) time range in sec (start,end), (default = None, everything is read)
-        drange:  (tuple, list) distance range in meter (not km) (start,end), (default = None, everything is read)
-        ddecim:  (int) distance decimation factor (default=1)
-        tdecim:  (int) time decimation factor (default=1)
-        hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)
-        kchunk:  (int) the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)
-        trace_chunk: (int) output space chunk set to trace_chunk traces (default = ntrace/100)
-        skip:    (bool) skip redundant block when reading data (default=False)
-        verbose: (int) be verbose (default=0, minimum message level)
-        filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)
-        compression: (bool) use compression in H5 files (default False)
+    filein, fileout: hdf5 (.h5) file to read/write<br>
+    trange:  (tuple, list) read time range see `a1das.core.parse_trange` for detail default = None, everything is read<br>
+    drange:  (tuple, list) distance range in meter (not km), see à1das.core.parse_drange` for details,
+    (default = None, everything is read)<br>
+    ddecim:  (int) distance decimation factor (default=1)<br>
+    tdecim:  (int) time decimation factor (default=1)<br>
+    hpcorner: (float) Corner frequency for High pass spatial filtering (ex. 600m, default=None)<br>
+    kchunk:  (int) the ouput HDF5 chunk size is set to input_time_block_size * kchunk (default=10)<br>
+    trace_chunk: (int) output space chunk set to trace_chunk traces (default = ntrace/100)<br>
+    skip:    (bool) skip redundant block when reading data (default=False)<br>
+    verbose: (int) be verbose (default=0, minimum message level)<br>
+    filterOMP: (bool) use the multithread sosfilter binary package instead of scipy.signal.sosfiltfilt (default True)<br>
+    compression: (bool) use compression in H5 files (default False)<br>
 
     ##Reading non transposed reducted output file
     With python using A1File.read(filename,format='reducted')
@@ -387,7 +396,7 @@ def reduction_notranspose(filein, fileout, trange=None, drange=None, tdecim=1, d
     """
 
     import h5py
-    from .core import open
+    from .core import open, parse_trange, parse_drange
     from scipy import signal
     from ._core_reducted_file import _create_h5_group_not_transposed,  __version_reducted_format__
     from ._core_febus_file import _true_time_policy
@@ -420,6 +429,12 @@ def reduction_notranspose(filein, fileout, trange=None, drange=None, tdecim=1, d
     dhd = f.data_header
     if isinstance(hd.node,list):
         raise FileFormatError('Cannot reduce raw data, only strain(rate)')
+
+    #
+    # parse (d)trange input format
+    #
+    drange = parse_drange(f.data_header, drange)
+    trange = parse_trange(f.data_header, trange)
 
     #
     #  --------------------------- block time size
@@ -626,21 +641,23 @@ def raw2strain(filein, fileout, GL, DT, order_time=2, order_space=2, trange=None
     After reduction, the records are stored in a 2D array [time x space] where space = fast axis
 
     ##input
-        filein, fileout: hdf5 (.h5) file to read/write
-        GL: (float) Gauge length (meter)
-        DT: (float) Derivation time (second)
-        order_time:  (int) finite derivation order in time, no derivation if set to 0 (default 2)
-        order_space: (int) finite derivation order in space (default 2)
-        trange:  read time range in sec [start,end], (default = None, everything is read)
-        drange:  read distance range in meter (not km) [start,end], (default = None, everything is read)
-        ddecim:  (int) read distance decimation factor (default=1)
-        tdecim:  (int) read time decimation factor (default=1)
-        kchunk:  (int) the ouput HDF5 time chunk size is set to kchunk * input time chunk size (default=10)
-        trace_chunk: (int) output space chunk set to trace_chunk traces (default = ntrace/100)
-        skip:    (bool) skip redundant block when reading data (default=False)
-        verbose: (int) be verbose (default=0, minimum message level)
-        compression: (bool) use compression on writing (default False)
-        transpose: (bool, default True) write a reducted file that is transposed (space x time) or not transposed (time x space)
+    filein, fileout: hdf5 (.h5) file to read/write<br>
+    GL: (float) Gauge length (meter)<br>
+    DT: (float) Derivation time (second)<br>
+    order_time:  (int) finite derivation order in time, no derivation if set to 0 (default 2)<br>
+    order_space: (int) finite derivation order in space (default 2)<br>
+    trange:  (tuple, list) read time range see `a1das.core.parse_trange` for detail,
+     default = None, everything is read<br>
+    drange:  (tuple, list) distance range in meter (not km), see à1das.core.parse_drange` for detail,
+    (default = None, everything is read)<br>
+    ddecim:  (int) read distance decimation factor (default=1)<br>
+    tdecim:  (int) read time decimation factor (default=1)<br>
+    kchunk:  (int) the ouput HDF5 time chunk size is set to kchunk * input time chunk size (default=10)<br>
+    trace_chunk: (int) output space chunk set to trace_chunk traces (default = ntrace/100)<br>
+    skip:    (bool) skip redundant block when reading data (default=False)<br>
+    verbose: (int) be verbose (default=0, minimum message level)<br>
+    compression: (bool) use compression on writing (default False)<br>
+    transpose: (bool, default True) write a reducted file that is transposed (space x time) or not transposed (time x space)<br>
 
     ##Reducted Output format
     Use a minimum HDF5 structure with one group and several Datasets
@@ -679,7 +696,7 @@ def raw2strain(filein, fileout, GL, DT, order_time=2, order_space=2, trange=None
 
     import h5py
     import numpy as np
-    from .core import open
+    from .core import open, parse_trange, parse_drange
     from a1das import _raw2strPy
     from ._a1das_exception import WrongValueError,DataTypeError
     from ._core_reducted_file import _create_h5_group_not_transposed, _create_h5_group_transposed_by_trace, \
@@ -701,6 +718,12 @@ def raw2strain(filein, fileout, GL, DT, order_time=2, order_space=2, trange=None
     hd = f.file_header
     block_times = hd.block_info['block_times']
     dhd = f.data_header
+
+    #
+    # parse (d)trange input format
+    #
+    drange = parse_drange(f.data_header, drange)
+    trange = parse_trange(f.data_header, trange)
 
     #
     #  --------------------------- block time size

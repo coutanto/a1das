@@ -49,8 +49,7 @@ def rplot(a1, fig=None, cmap='RdBu', vrange=None, splot=(1, 1, 1), title='', dra
         dmin=dist[0]
         dmax=dist[-1]
     else:
-        dmin=drange[0]
-        dmax=drange[1]
+        dmin, dmax =drange
         d1=np.nanargmin(np.abs(dist-dmin))
         d2=np.nanargmin(np.abs(dist-dmax))
 
@@ -63,8 +62,7 @@ def rplot(a1, fig=None, cmap='RdBu', vrange=None, splot=(1, 1, 1), title='', dra
         tmin=time[0]
         tmax=time[-1]
     else:
-        tmin=trange[0]
-        tmax=trange[1]
+        tmin, tmax =trange
         t1=np.nanargmin(np.abs(time-tmin))
         t2=np.nanargmin(np.abs(time-tmax))
 
@@ -78,8 +76,7 @@ def rplot(a1, fig=None, cmap='RdBu', vrange=None, splot=(1, 1, 1), title='', dra
             vmax = np.max(np.absolute(a1.data[t1:t2, d1:d2]), axis=None)
         vmin = -vmax
     else:
-        vmin = vrange[0]
-        vmax = vrange[1]
+        vmin, vmax = vrange
 
     ax = plt.subplot(splot[0], splot[1], splot[2])
 
@@ -102,7 +99,7 @@ def rplot(a1, fig=None, cmap='RdBu', vrange=None, splot=(1, 1, 1), title='', dra
 # ====================================    PLOT()  =======================================
 #
 def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, by_trace=False, variable_area=False,
-         drange=None, trange=None, redraw=None):
+         drange=None, trange=None, redraw=None, **kwargs):
     """
     plot a DAS section as curves
     ----------------------------
@@ -158,8 +155,7 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
         dmin=dist[0]
         dmax=dist[-1]
     else:
-        dmin=drange[0]
-        dmax=drange[1]
+        dmin, dmax = drange
         d1=np.nanargmin(np.abs(dist-dmin))
         d2=np.nanargmin(np.abs(dist-dmax))
         if d2==d1:
@@ -173,8 +169,7 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
             t2=a1.data.shape[0]
 
     else:
-        tmin=trange[0]
-        tmax=trange[1]
+        tmin, tmax = trange
         t1=np.nanargmin(np.abs(time-tmin - a1['otime']))
         t2=np.nanargmin(np.abs(time-tmax - a1['otime']))
 
@@ -236,7 +231,7 @@ def plot(a1, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, 
         v *= gain
         v += from_distance
         if not redraw:
-            lines[i], = ax.plot(dates,v,'k')
+            lines[i], = ax.plot(dates, v, **kwargs)
         else:
             lines[i].set_ydata(v)
             lines[i].set_xdata(dates)

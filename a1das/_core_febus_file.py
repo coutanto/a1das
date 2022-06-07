@@ -253,6 +253,7 @@ def open_febus_file(filename):
 #
 def read_febus_file(f, block=None, drange=None, trange=None, ddecim=1, skip=True, verbose=0, float_type='float64'):
     """
+    ## Description
     This function is supposed to be called from core.read()
 
     read_febus_file(f, block=None, trange=None, drange=None,  ddecim=1, skip=True, verbose=0)
@@ -265,15 +266,15 @@ def read_febus_file(f, block=None, drange=None, trange=None, ddecim=1, skip=True
     3) real all if trange = block = None
     4) read positions comprised between drange = [start, end] or all if drange = None
 
-    input:
-      a1 = an A1File class instance
-      block = a list of 1 or 2 elements: [one_block_to_read] or [first_block, last_block], or None
-      trange = a list of time range to read: [tmin, tmax], or None
-      drange = a list of distance range to read: [dmin, dmax], or None
-      ddecim = space decimation or 1
-      skip = read all blocks or 1 over 2 (faster but read only Even number of blocks)
-      float_type= float type on output, data are native float32
-      verbose = >= 0
+    ## Input:
+    a1 = an A1File class instance<br>
+    block = a list of 1 or 2 elements: [one_block_to_read] or [first_block, last_block], or None<br>
+    trange = a list of time range to read, see `a1das.core.parse_trange` for format details<br>
+    drange = a list of distance range to read: [dmin, dmax], or None<br>
+    ddecim = space decimation or 1<br>
+    skip = read all blocks or 1 over 2 (faster but read only Even number of blocks)<br>
+    float_type= float type on output, data are native float32<br>
+    verbose = >= 0<br>
 
     return:
       data_header (_A1DataHeader class instance), data (numpy 2D ndarray)
@@ -281,6 +282,7 @@ def read_febus_file(f, block=None, drange=None, trange=None, ddecim=1, skip=True
     """
 
     from ._a1das_exception import DataTypeError
+    from .core import parse_trange, parse_drange
 
     hd = f.file_header
     block_times = hd.block_info['block_times']
@@ -298,6 +300,13 @@ def read_febus_file(f, block=None, drange=None, trange=None, ddecim=1, skip=True
         raise DataTypeError('Wrong float type '+ float_type )
 
     dt = f.data_header['dt']
+
+    #
+    # parse trange
+    #
+    trange = parse_trange(f.data_header, trange)
+    drange = parse_drange(f.data_header, drange)
+
 
     #
     # read according to block or to trange

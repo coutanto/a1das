@@ -129,15 +129,22 @@ class A1File:
 
         Data are read as float32 and are converted by default as float64 unless specified
 
-        ## Input all format:
-            trange = (list/tuple) time range in sec from 1st sample, [start, end]/[value] or
-                     (range) index range  (default = None, read all)
-            drange = (list/tuple) distance range in meter from 1st sample [start, end]/[value] or
-                     (range) index range (default = None, read all)
-            skip = (bool) read all blocks/chunck of data (False) or one over 2 (True) (default False)
+        ## Input for all file format:
+
+        <b>trange</b> = (list/tuple) time range to be read, see `parse_trange` for format
+                (default = None, read all)
+
+        <b>drange</b> = (list/tuple) distance range to be read
+                    - In meter from 1st sample: [start, end]/[single_value] or
+                    - In index range: range(istart, iend)
+                    (default = None, read all)
+
+        <b>skip</b> = (bool) read all blocks/chunck of data (False) or one over 2 (True) (default False)
                 blocks contains redundant data, skip=True is faster but may yield some errors on block limits
-            verbose = verbosity level
-            float_type = 'float_32' or 'float_64' float type for data in memory, default is float64
+
+        <b>verbose</b> = verbosity level
+
+        float_type = 'float_32' or 'float_64' float type for data in memory, default is float64
 
         ## Input febus file
             block = (list), block=[start, end, step]. Read full block of data, from start to end by step.
@@ -163,6 +170,13 @@ class A1File:
         from ._core_febus_file import read_febus_file
         from ._core_reducted_file import read_reducted_file
         from ._core_socket import read_das_socket
+        from obspy.core import UTCDateTime
+        
+        #
+        # parse (d)trange input formats
+        #
+        trange = parse_trange(self.data_header, trange)
+        drange = parse_drange(self.data_header, drange)
 
         #
         # read from a febus file file
@@ -176,7 +190,7 @@ class A1File:
         #
             elif self.file_header.type == 'reducted':
                 data_header, data = read_reducted_file(self, drange=drange, trange=trange, verbose=verbose,
-                                                       float_type=float_type, tdecim=tdecim)
+                                                       float_type=float_type, tdecim=tdecim, ddecim=ddecim)
         #
         # read from a socket
         #
@@ -255,6 +269,35 @@ class A1File:
         # convert to Posix
         self.data_header.set_item(otime=dd.timestamp()+offset)
 
+
+
+    def time(self):
+        """
+        ## Description
+        Return the time vector defined in the A1File data_header, i.e. same as f['time']
+        """
+        return self.data_header['time']
+
+    def dist(self):
+        """
+        ## Description
+        Return the distance vector defined in the A1File data_header, i.e. same as f['dist']
+        """
+        return self.data_header['dist']
+
+    def otime(self):
+        """
+        ## Description
+        Return the starting time in POSIX time (float64)
+        """
+        return self.data_header['otime']
+
+    def etime(self):
+        """
+        ## Description
+        Return the ending time in POSIX time (float64)
+        """
+        return self.data_header['otime'] + self.data_header['dt']*self.data_header['ntime']
 
     #
     # ====================================    PRINT()  =======================================
@@ -407,8 +450,7 @@ class A1File:
         # read only selected time range
         #
         else:
-            from_time = trange[0]
-            to_time = trange[1]
+            from_time, to_time = trange
 
             if not skip:
                 # check range that was given as argument
@@ -441,7 +483,7 @@ class A1File:
                     dt_1 = from_time - (first_block * bts2 + bts4) * dt
                     i_1 = int(dt_1 / dt)
                     dt_last = to_time - ((last_block - 1) * bts2 + bts4) * dt
-                    i_last = int(dt_last / dt)
+                    i_last = int(roundTraditional(dt_last / dt, 1))
                     if nb_block >1:
                         time_indices = [[bts4 + i_1, 3 * bts4], [bts4, 3 * bts4], [bts4, i_last + bts4]]
                     else:
@@ -548,8 +590,7 @@ class A1File:
         # extract a selected part
         else:
             # check range given as argument
-            from_position = drange[0]
-            to_position = drange[1]
+            from_position, to_position = drange
             if from_position < distance_fiber_in[0]:
                 from_position = distance_fiber_in[0]
             if to_position > distance_fiber_in[-1]:
@@ -569,20 +610,55 @@ class A1File:
 
         return distance_fiber_out, distance_indices, distance_fiber_in
 
-    def time(self):
+
+
+    # ====================================   INDEX()  =======================================
+    #
+    def index(self, drange=None, trange=None):
         """
         ## Description
-        Return the time vector defined in the A1File data_header, i.e. same as f['time']
-        """
-        return self.data_header['time']
+        Return the index or list of indices that correspond(s) to the list of distance(resp. time) range
+        in the 'distance' vector (resp. time vector)
 
-    def dist(self):
-        """
-        ## Description
-        Return the distance vector defined in the A1File data_header, i.e. same as f['dist']
-        """
-        return self.data_header['dist']
+        ## Input
+        !!!!! Only one of trange or drange can be given
 
+        drange = (list or tuple) [unique_dist]; [dist_min, dist_max]; [dist1, dist2, ... distN] (default = None, take all)
+
+        trange = (list or tuple) [unique_time]; [time_min, time_max]; [t1, t2, ... tN];[utc_start_date, utc_end_date]  (default = None, take all)
+
+        ## Return
+        A list of indices that match the given range in the A1Section.data_header['dist'] or
+        A1Section.data_header['time'] vectors
+
+        ## Usage example
+        >>> import a1das
+        >>> f=open('filename')
+        >>> a=f.read()
+        >>> dhd = a.data_header
+
+        >>> dlist1 = f.index(drange=50.)            # get index for distance 50.m
+        >>> dlist1 = f.index(drange=[50.])          # get index at distance 50 m
+        >>> dlist2 = f.index(drange=[50., 60.])     # get 2 indices at 50 and 60m
+        >>> dlist3 = f.index(drange=[[dist] for dist in np.arange(50,60.,1.)]) # get all indices for distance 50< ..<60 every 1m
+        >>> dlist4 = f.index(drange=(50.,60.))        # get all indices between 50. and 60.m
+        >>> tlist = f.index(trange=[10., 20.])      # 2 indices for time 10s and 20 sec after 1st sample
+        >>> tlist = f.index(trange=[2020:03:12-10:10:10, 2020:03:12-10:10:20]) 
+        """
+        #
+        # first convert trange if given as date
+        #
+        from obspy.core import UTCDateTime
+        
+        if isinstance(trange, list) or isinstance(trange, tuple):
+            if isinstance(trange[0], str) and isinstance(trange[1], str):
+                trange = [UTCDateTime(trange[0]).timestamp - self['otime'],
+                          UTCDateTime(trange[1]).timestamp - self['otime']]
+            elif isinstance(trange[0], UTCDateTime) and isinstance(trange[1], UTCDateTime):
+                trange = [trange[0].timestamp - self['otime'],
+                          trange[1].timestamp - self['otime']]
+                
+        return self.data_header.index(drange=drange, trange=trange)
 
 #
 # ========================================= CLASS A1SECTION ============================
@@ -662,7 +738,7 @@ class A1Section:
     #
     #
     #
-    def subsection(self,trange=(None,None),drange=(None,None)):
+    def subsection(self,trange=None,drange=None):
         """
         ## Description
         return a A1Section which is a subsection of the original section
@@ -671,7 +747,18 @@ class A1Section:
         trange = (list) [start, stop] time range in sec starting from origin time. (default = (None, None), keep all)
         drange = (list) [start, stop]] distance range in m starting from origin. (default = (None, None), keep all)
         """
+        from numpy import nanargmin
+        
+        #parse trange formats
+        trange = parse_trange(self.data_header, trange)
+        if trange is None:
+            trange = [self['time'][0], self['time'][-1]]
         tslice=slice(trange[0],trange[1],None)
+
+        #parse drange
+        drange = parse_drange(self.data_header, drange)
+        if drange is None:
+            drange = [self['dist'][0], self['dist'][-1]]
         dslice=slice(drange[0],drange[1],None)
         if self['axis1'] == 'time':
             itslice, idslice = self.data_header.dim2index(tslice, dslice)
@@ -850,19 +937,21 @@ class A1Section:
         >>> a=f.read()
         >>> dhd = a.data_header
 
-        >>> dlist1 = dhd.index(drange=50.)            # get index for distance 50.m
-        >>> dlist1 = dhd.index(drange=[50.])          # get index at distance 50 m
-        >>> dlist2 = dhd.index(drange=[50., 60.])     # get 2 indices at 50 and 60m
-        >>> dlist3 = dhd.index(drange=[[dist] for dist in np.arange(50,60.,1.)]) # get all indices for distance 50< ..<60 every 1m
-        >>> dlist4 = dhd.index(drange=(50.,60.))        # get all indices between 50. and 60.m
-        >>> tlist = dhd.index(trange=[10., 20.])      # 2 indices for time 10s and 20 sec after 1st sample
+        >>> dlist1 = a.index(drange=50.)            # get index for distance 50.m
+        >>> dlist1 = a.index(drange=[50.])          # get index at distance 50 m
+        >>> dlist2 = a.index(drange=[50., 60.])     # get 2 indices at 50 and 60m
+        >>> dlist3 = a.index(drange=[[dist] for dist in np.arange(50,60.,1.)]) # get all indices for distance 50< ..<60 every 1m
+        >>> dlist4 = a.index(drange=(50.,60.))        # get all indices between 50. and 60.m
+        >>> tlist = a.index(trange=[10., 20.])      # 2 indices for time 10s and 20 sec after 1st sample
+        >>> tlist = a.index(trange=[2020:03:12-10:10:10, 2020:03:12-10:10:20]) 
         """
         return self.data_header.index(drange=drange, trange=trange)
 
     #
     # ====================================   PLOT()  =======================================
     #
-    def plot(self, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, by_trace=False, variable_area=False, drange=None, trange=None, redraw=None):
+    def plot(self, fig=None, clip=100, splot=(1, 1, 1), title='', max=100, amax=None, by_trace=False, 
+             variable_area=False, drange=None, trange=None, redraw=None, **kwargs):
         """
         ##Description
         Produce a vector plot of the das section, optionnaly with variable area
@@ -894,7 +983,8 @@ class A1Section:
 
         if self.data is None:
             raise ReadDataError('Hum Hum, read data before plotting ...')
-        fig, redraw = plot(self,fig, clip, splot, title, max, amax, by_trace, variable_area, drange, trange, redraw)
+        fig, redraw = plot(self, fig, clip, splot, title, max, amax, by_trace, variable_area, drange, trange, redraw, 
+                           **kwargs)
 
         return fig, redraw
     #
@@ -1107,6 +1197,155 @@ def open(filename, format=None):
         raise WrongValueError(" could not open file<"+filename+">, wrong format argument?")
 
 #
+# ========================================= PARSE_TRANGE()  ============================
+#
+def parse_trange(dhd, trange):
+    """
+    ## Description
+    Convert various input time range formats into a unified form for internal use
+
+    ## Input
+    <b>dhd</b>: data_header from A1File.data_header or A1Section.data_header<br>
+    <b>trange</b>: (list, tuple or range) acceptable time range formats are:
+
+    - [start, end]/[single_value]: where value(s) are sec from 1st sample:
+
+    - range(istart, iend): where values are time array index
+
+    - [date1, date2]: where date? is a string='YYYY:MM:DD-hh:mn:ss', or an obspy.UTCDateTime object
+
+    - None: read all
+
+    !!!! if specifying a single time, use list as [start] or tuple as (start,)
+    ## Return
+    trange = [start, end]: list with time range starting/ending time with respect to first sample
+    """
+    from obspy.core import UTCDateTime
+    from a1das._a1das_exception import DataTypeError
+
+    if trange is None:
+        return None
+
+    #
+    # if trange is a tuple, convert into list
+    #
+    if isinstance(trange,tuple):
+        trange = list(trange)
+
+    #
+    # process trange if given as date
+    #
+    for i,t in enumerate(trange):
+        if isinstance(t,str):
+            trange[i] = UTCDateTime(t).timestamp - dhd['otime']
+        elif isinstance(t,UTCDateTime):
+            trange[i] = t.timestamp - dhd['otime']
+
+    #
+    # process trange if given as index range
+    #
+    if isinstance(trange,range):
+        if len(trange)>1:
+            l = list(trange)
+            t1 = l[0]
+            t2 = l[-1]
+            trange = [dhd['time'][t1], dhd['time'][t2]]
+        else:
+            trange = [dhd['time'][list(range)[0]]]
+
+    #
+    # process trange if given as single value
+    #
+    if len(trange) == 1:
+        trange = [trange[0], trange[0]+dhd['dt']]
+        
+    #
+    # check for single time request
+    #
+    if trange[0]==trange[1]:
+        trange[1] += dhd['dt']
+
+    #
+    # check conversion
+    #
+    if len(trange)==1:
+        raise DataTypeError('Error on trange format, see help(a1das.core.parse_trange)')
+    for i, t in enumerate(trange):
+        if not isinstance(t,float) and not isinstance(t,int):
+            raise DataTypeError('Error on trange format, see help(a1das.core.parse_trange)')
+
+    return trange
+
+# ========================================= PARSE_TRANGE()  ============================
+#
+def parse_drange(dhd, drange):
+    """
+    ## Description
+    Convert various input distance range formats into a unified form for internal use
+
+    ## Input
+    <b>dhd</b>: data_header from A1File.data_header or A1Section.data_header<br>
+    <b>drange</b>: (list, tuple or range) acceptable time range formats are:
+
+    - [start, end]/[single_value]: where value(s) are meters from space origin:
+
+    - range(istart, iend): where values are time array index
+
+    - None: read all
+
+    !!!! if specifying a single distance, use list as [start] or tuple as (start,)
+    ## Return
+    drange = [start, end]: list with time range starting/ending distance with respect to first location
+    """
+    from obspy.core import UTCDateTime
+    from a1das._a1das_exception import DataTypeError
+
+    if drange is None:
+        return None
+
+    #
+    # if drange is a tuple, convert into list
+    #
+    if isinstance(drange,tuple):
+        drange = list(drange)
+
+
+    #
+    # process drange if given as index range
+    #
+    if isinstance(drange,range):
+        if len(drange)>1:
+            l = list(drange)
+            t1 = l[0]
+            t2 = l[-1]
+            drange = [dhd['dist'][t1], dhd['dist'][t2]]
+        else:
+            drange = [dhd['dist'][list(range)[0]]]
+
+    #
+    # process trange if given as single value
+    #
+    if len(drange) == 1:
+        drange = [drange[0], drange[0]+dhd['dx']]
+        
+    #
+    # check for single distance request
+    #
+    if drange[0]==drange[1]:
+        drange[1] += dhd['dx']
+    #
+    # check conversion
+    #
+    if len(drange)==1:
+        raise DataTypeError('Error on drange format, see help(a1das.core.parse_frange)')
+    for i, t in enumerate(drange):
+        if not isinstance(t,float) and not isinstance(t,int):
+            raise DataTypeError('Error on drange format, see help(a1das.core.parse_frange)')
+
+    return drange
+
+
+#
 # ========================================= tcp_address()  ============================
 #
 def tcp_address(address='127.0.0.1', port=6667):
@@ -1192,3 +1431,6 @@ def utime(str, format="%Y:%m:%d-%H:%M:%S"):
     dd = datetime(d.year, d.month, d.day, d.hour, d.minute, d.second, tzinfo=timezone.utc)
     # convert to Posix
     return dd.timestamp()
+
+def roundTraditional(val,digits):
+   return round(val+10**(-len(str(val))-1), digits)

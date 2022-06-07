@@ -241,7 +241,7 @@ def read_location_from_gpkg(file):
         return path_xyz, gdf.crs.srs
 
 
-def dt_morlet(sig1, sig2, wlen, freq):
+def dt_morlet(sig1, sig2, wlen, dt, freq):
     """
     ## Description
     Compute time shift between sig1 and sig2 using a moving projection on morlet wavelet transform
@@ -258,7 +258,7 @@ def dt_morlet(sig1, sig2, wlen, freq):
     ws1, ws2: ndarray(nfreq, ntime), complex, projection on Morlet wavelet
     """
     from scipy.signal import morlet, correlate
-    from numpy import arange, asarray, pi, angle, ndarray, unwrap, dot, sqrt
+    from numpy import arange, asarray, pi, angle, ndarray, unwrap, dot, sqrt, exp
     
     #
     # set frequency range
@@ -273,19 +273,35 @@ def dt_morlet(sig1, sig2, wlen, freq):
     #
     # initialize  output array
     #
-    dt = ndarray((len(freq),len(sig1)))
+    delai = ndarray((len(freq),len(sig1)))
     ws1 = ndarray((len(freq),len(sig1)),dtype=complex)
     ws2 = ndarray((len(freq),len(sig2)),dtype=complex)
+    m = ndarray((len(freq),wlen),dtype=complex)
+    cof = wlen*dt/2.
     for i,f in enumerate(freq):
         omega = 2*pi*f
-        wm = morlet(wlen, omega)
+        #wm = morlet(wlen, w=f*cof, s=5.)
+        wm = _morlet(wlen, f, dt)
         norm =  sqrt(sum(abs(wm)**2))
         wm = wm/norm
+        m[i,:] = wm
         ws1[i,:] = correlate(sig1, wm, mode='same')
         ws2[i,:] = correlate(sig2, wm, mode='same')
-        dt[i,:] = unwrap(angle(ws2[i,:])-angle(ws1[i,:]))/omega
+        delai[i,:] = unwrap(angle(ws2[i,:])-angle(ws1[i,:]))#/omega
 
-        
-    return freq, dt, ws1, ws2
-        
+    return m, freq, delai, ws1, ws2
 
+def _morlet(wlen,freq,dt):
+    """
+    :param wlen:
+    :param freq:
+    :return:
+    """
+    from numpy import mod, exp, pi,blackman, arange
+    #if mod(wlen,2) == 0:
+    #    wlen += 1
+    i0 = (wlen-1)/2
+    t = arange(0,wlen)*dt
+    m = exp(1j*2.*pi*t*freq) * blackman(wlen)
+        
+    return m

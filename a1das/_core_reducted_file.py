@@ -119,7 +119,7 @@ def open_reducted_file(filename):
 #
 # ============================================ READ_REDUCTED_FILE() ============================
 #
-def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='float64',tdecim=None):
+def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='float64',tdecim=None,ddecim=None):
 
     """
     Read a file reducted from original febus file. This function is to be called from a1file.read()
@@ -128,16 +128,19 @@ def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='f
     - f1 = <A1File> class instance
     - drange = (list/tuple) distance range in meter from 1st sample [start, end]/[value] or (range) index range
                 (default = None, read all)
-    - trange = (list/tuple) time range in sec from 1st sample, [start, end]/[value] or (range) index range
+    - trange = (list/tuple) time range, see `core.parse_trange` for details bout format
                (default = None, read all)
     - verbose not use yet
     - float_type = (float type) force type conversion (default=float64)
     - tdecim = (int) time decimation
+    - ddecim = (int) space decimation
     """
+    from .core import parse_trange, parse_drange
     from numpy import empty, nanargmin, abs
     from scipy import signal
     from numpy import arange
     from  ._a1das_exception import FileFormatError, WrongValueError
+    from obspy.core import UTCDateTime
 
     # H5 file handle
     f = f1.file_header.fd
@@ -152,38 +155,29 @@ def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='f
     dt = f1['dt'] # or f1.data_header['dt']
     if tdecim is None:
         tdecim = 1
+    if ddecim is None:
+        ddecim = 1
 
     # drange
-    if isinstance(drange,range):
-        l=list(drange)
-        d1=l[0]
-        d2=l[-1]
-    elif drange is None:
+    drange = parse_drange(f1.data_header, drange)
+    if drange is None:
         d1 = 0
         d2 = nspace
-    elif isinstance(drange,list) or isinstance(drange,tuple):
+    else:
         d1 = nanargmin(abs(dist - drange[0]))
-        if len(drange) == 1:
-            d2 = d1 + 1
-        else:
-            d2 = nanargmin(abs(dist - drange[1])) + 1
+        d2 = nanargmin(abs(dist - drange[1])) #+ 1
         nspace = d2 - d1
 
-    # trange
-    if isinstance(trange,range):
-        l=list(drange)
-        t1=l[0]
-        t2=l[-1]
-    elif trange is None:
-        t1=0
-        t2=ntime
-    elif isinstance(trange,list) or isinstance(trange,tuple):
+    # parse trange and convert to index
+    trange = parse_trange(f1.data_header, trange)
+    if trange is None:
+        t1 = 0
+        t2 = ntime
+    else:
         t1 = nanargmin(abs(time - trange[0]))
-        if len(trange) == 1:
-            t2 = t1 + 1
-        else:
-            t2 = nanargmin(abs(time - trange[1])) #+ 1
+        t2 = nanargmin(abs(time - trange[1])) #+ 1
         ntime = t2 - t1
+
     #
     # data have been transposed from original
     #
@@ -221,10 +215,10 @@ def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='f
         else:
             try:
                 section = empty((nspace, ntime), dtype=float_type)
-                for i, ix in enumerate(range(d1,d2)):
+                for i, ix in enumerate(range(d1,d2,ddecim)):
                     section[i, :] = f['Traces/'+str(ix)][t1:t2]
             except:
-                section = f['section'][d1:d2,t1:t2].astype(float_type)
+                section = f['section'][d1:d2:ddecim,t1:t2].astype(float_type)
             tdecim=1
 
         #
@@ -242,9 +236,9 @@ def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='f
             raise WrongValueError('cannot apply time decimation on section of dimension <time_x_space> ie not transposed')
 
         try:
-            section = f['section'][t1:t2,d1:d2].astype(float_type) # format >12-2021
+            section = f['section'][t1:t2,d1:d2:ddecim].astype(float_type) # format >12-2021
         except:
-            section = f['strain'][t1:t2, d1:d2].astype(float_type) # format < 12-2021
+            section = f['strain'][t1:t2, d1:d2:ddecim].astype(float_type) # format < 12-2021
         tdecim=1
 
     # initialize data_header
@@ -252,7 +246,7 @@ def read_reducted_file(f1, drange=None, trange=None, verbose=None, float_type='f
     # fill time and space constants
     data_header.set_item(nspace= nspace)
     data_header.set_item(ntime = ntime)
-    data_header.set_item(dist = dist[d1:d2])
+    data_header.set_item(dist = dist[d1:d2:ddecim])
     data_header.set_item(time = time[t1:t2:tdecim])
     data_header.set_item(dt = dt*tdecim)
 

@@ -178,6 +178,8 @@ class _A1DataHeader:
             tend = nanargmin(abs(time - slices[it].stop))
         if slices[it].step is not None:
             tstep = int(slices[it].step / self['dt'])
+        if tend == tstart:
+            tend += 1
         # space
         dist = self['dist']
         dstart = dend = dstep = None
@@ -187,6 +189,8 @@ class _A1DataHeader:
             dend = nanargmin(abs(dist - slices[id].stop))
         if slices[id].step is not None:
             dstep = int(slices[id].step / self['dx'])
+        if dstart == dend:
+            dend += 1
         #print(dstart, dend, dstep,slices[id])
         if self['axis1'] == 'time':
             return slice(tstart, tend, tstep), slice(dstart, dend, dstep)

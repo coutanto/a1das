@@ -160,7 +160,7 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
     TODO: write a float32 version, write a transposed version accepting array[nspace x ntime]
 
     ## Input
-        arrayIn: 2D (float64) ndarray [nTime x nSpace], or <A1Section> class instance (with float64 data array)
+        arrayIn: 2D (float64) ndarray [nSpace x nTime], or <A1Section> class instance (with float64 data array)
         lag:    (float) time lag, in sample for ndarray input, in sec for <A1Section>
         stack:  (bool) stack the correlations for consecutive windows of 2*lag+1 length if 2*lag+1 < length signal (default False)
         base:   (int) <0> if first index of trace is 0, <1> if first index is 1 (default 0)
@@ -217,8 +217,8 @@ def compute_xcorr(arrayIn, lag=None, stack=False, verbose=0, base=0):
         if arrayIn.dtype != np.float64:
             raise DataTypeError('Can only process float64 data type, please convert before calling xcorr')
     elif isinstance(arrayIn, ndarray):
-        ntime = arrayIn.shape[0]
-        transposed = False
+        ntime = arrayIn.shape[1]
+        transposed = True
     else:
         raise DataTypeError('Data array must be an A1Section or a numpy ndarray (ntime x nspace)')
 
